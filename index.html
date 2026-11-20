@@ -1,0 +1,2627 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MLV Quản Lý — Hệ Thống Quản Lý Máy Lạnh Việt</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              navy: '#0f172a',
+              blue: '#1e3a8a',
+              teal: '#0d9488',
+              light: '#f0fdfa',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(6px) scale(0.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-anim {
+      animation: popIn 0.16s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- HEADER ĐIỀU HƯỚNG CHÍNH -->
+  <header class="sticky top-0 z-30 bg-gradient-to-r from-slate-950 via-blue-950 to-teal-950 text-white shadow-lg border-b border-white/10">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-3.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+      <!-- Thương hiệu -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 text-slate-950 flex items-center justify-center shadow-md shadow-teal-500/20 flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-xl font-extrabold tracking-tight leading-snug">
+            MLV Quản Lý — Hệ Thống Quản Lý Máy Lạnh Việt
+          </h1>
+          <p class="text-xs text-slate-300">
+            Đồng bộ kho thiết bị • Nhật ký lắp đặt • Thanh toán tiền thuê • Danh mục hệ thống
+          </p>
+        </div>
+      </div>
+
+      <!-- Khu vực người cập nhật, trạng thái đồng bộ & thao tác -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Người cập nhật hiện tại -->
+        <div class="flex items-center gap-1.5 bg-white/10 border border-white/15 rounded-xl px-2.5 py-1.5">
+          <label for="editorNameInput" class="text-xs text-teal-200 font-medium whitespace-nowrap">Người cập nhật:</label>
+          <input
+            type="text"
+            id="editorNameInput"
+            oninput="updateEditorName(this.value)"
+            placeholder="Nhập tên bạn..."
+            class="bg-transparent text-white text-xs sm:text-sm font-semibold placeholder-slate-400 outline-none w-28 sm:w-36"
+          />
+        </div>
+
+        <!-- Trạng thái đồng bộ -->
+        <div id="syncStatusBadge" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-400/15 text-amber-200 border border-amber-300/30">
+          <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          <span id="syncStatusText">Chế độ cục bộ</span>
+        </div>
+
+        <!-- Cấu hình Firebase -->
+        <button
+          type="button"
+          onclick="openFirebaseModal()"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-teal-500 hover:bg-teal-400 text-slate-950 transition shadow-sm cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span>Cấu hình Firebase</span>
+        </button>
+
+        <!-- Xuất JSON -->
+        <button
+          type="button"
+          onclick="exportAllJSON()"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium bg-white/10 hover:bg-white/20 text-white border border-white/15 transition cursor-pointer"
+        >
+          <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>Xuất JSON</span>
+        </button>
+
+        <!-- Khôi phục dữ liệu gốc -->
+        <button
+          type="button"
+          onclick="openConfirmModal({
+            title: 'Khôi phục dữ liệu gốc từ file Excel?',
+            message: 'Tất cả thay đổi hiện tại sẽ được đặt lại về đúng dữ liệu gốc 26 bộ máy của MLV Quản Lý.',
+            confirmText: 'Khôi phục gốc',
+            onConfirm: resetToInitialData
+          })"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 transition cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Khôi phục dữ liệu gốc</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- THÂN ỨNG DỤNG -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- BANNER THÔNG BÁO -->
+    <div id="toastBar" class="hidden rounded-2xl px-4 py-3 text-sm font-medium border shadow-sm flex items-center justify-between gap-3 modal-anim">
+      <div class="flex items-center gap-2.5">
+        <span id="toastIcon"></span>
+        <span id="toastText"></span>
+      </div>
+      <button type="button" onclick="hideToast()" class="p-1 rounded-lg hover:bg-black/5 cursor-pointer" aria-label="Đóng thông báo">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- 6 THẺ KPI TỔNG QUAN -->
+    <section id="kpiCardsSection" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <!-- Render tự động qua JS -->
+    </section>
+
+    <!-- THANH TAB ĐIỀU HƯỚNG -->
+    <nav class="bg-white rounded-2xl p-2 shadow-sm border border-slate-200/80 flex flex-wrap items-center gap-1.5" aria-label="Phân hệ quản lý">
+      <button type="button" data-tab="overview" onclick="switchTab('overview')" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer">
+        Tổng quan &amp; Tra cứu
+      </button>
+      <button type="button" data-tab="inventory" onclick="switchTab('inventory')" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer">
+        Kho thiết bị
+      </button>
+      <button type="button" data-tab="installations" onclick="switchTab('installations')" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer">
+        Nhật ký lắp đặt
+      </button>
+      <button type="button" data-tab="payments" onclick="switchTab('payments')" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer">
+        Nhật ký thanh toán
+      </button>
+      <button type="button" data-tab="categories" onclick="switchTab('categories')" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer">
+        Danh mục
+      </button>
+    </nav>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: TỔNG QUAN & TRA CỨU                                            -->
+    <!-- ===================================================================== -->
+    <section id="panel-overview" class="tab-panel space-y-6">
+      <!-- Tình trạng kho thiết bị -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-900">Tình Trạng Kho Thiết Bị</h2>
+            <p class="text-xs text-slate-500">Đối chiếu số bộ máy và giá trị thiết bị theo trạng thái tồn kho / đã lắp đặt</p>
+          </div>
+          <span id="overviewUpdatedMeta" class="text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl font-medium"></span>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-600 font-semibold">
+              <tr>
+                <th class="py-3 px-4 text-left">Trạng Thái Kho</th>
+                <th class="py-3 px-4 text-right">Số Bộ Máy</th>
+                <th class="py-3 px-4 text-right">Giá Trị Máy (đ)</th>
+                <th class="py-3 px-4 text-left">Tỷ Trọng</th>
+              </tr>
+            </thead>
+            <tbody id="warehouseSummaryBody" class="divide-y divide-slate-100">
+              <!-- Render tự động -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3 Khối Tra Cứu Nhanh -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <!-- Tra cứu 1: Theo Mã Phiếu Lắp Đặt -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-sm sm:text-base font-bold text-blue-950">Tra Cứu Theo Mã Phiếu Lắp Đặt</h3>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800">Lắp đặt</span>
+            </div>
+            <div>
+              <label for="lookupInstallTicket" class="block text-xs font-medium text-slate-500 mb-1">Chọn Mã Phiếu:</label>
+              <select id="lookupInstallTicket" onchange="renderInstallLookup()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-teal-500 outline-none text-sm font-medium cursor-pointer"></select>
+            </div>
+            <div id="installLookupResult" class="rounded-xl bg-slate-50 border border-slate-200/70 p-3.5 text-sm space-y-2">
+              <!-- Kết quả tra cứu -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Tra cứu 2: Theo Mã Thiết Bị Trong Kho -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-sm sm:text-base font-bold text-blue-950">Tra Cứu Theo Mã Thiết Bị Kho</h3>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800">Kho máy</span>
+            </div>
+            <div>
+              <label for="lookupDeviceCode" class="block text-xs font-medium text-slate-500 mb-1">Chọn Mã Thiết Bị:</label>
+              <select id="lookupDeviceCode" onchange="renderDeviceLookup()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-teal-500 outline-none text-sm font-medium cursor-pointer"></select>
+            </div>
+            <div id="deviceLookupResult" class="rounded-xl bg-slate-50 border border-slate-200/70 p-3.5 text-sm space-y-2">
+              <!-- Kết quả tra cứu -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Tra cứu 3: Lịch Sử Thanh Toán Theo Mã Phiếu -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-sm sm:text-base font-bold text-blue-950">Tra Cứu Lịch Sử Thanh Toán</h3>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800">Tiền thuê</span>
+            </div>
+            <div>
+              <label for="lookupPaymentTicket" class="block text-xs font-medium text-slate-500 mb-1">Chọn Mã Phiếu:</label>
+              <select id="lookupPaymentTicket" onchange="renderPaymentLookup()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-teal-500 outline-none text-sm font-medium cursor-pointer"></select>
+            </div>
+            <div id="paymentLookupResult" class="rounded-xl bg-slate-50 border border-slate-200/70 p-3.5 text-sm space-y-2">
+              <!-- Kết quả tra cứu -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: KHO THIẾT BỊ                                                   -->
+    <!-- ===================================================================== -->
+    <section id="panel-inventory" class="tab-panel hidden space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-5 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Danh Sách Thiết Bị Nhập Kho &amp; Trạng Thái Tồn Kho</h2>
+            <p id="inventoryStatsSub" class="text-xs text-slate-500"></p>
+          </div>
+          <button
+            type="button"
+            onclick="openDeviceModal()"
+            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-900 to-teal-600 hover:from-blue-800 hover:to-teal-500 shadow-sm transition cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Thêm thiết bị mới</span>
+          </button>
+        </div>
+
+        <!-- Bộ lọc Kho thiết bị -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
+          <div class="sm:col-span-2 relative">
+            <input
+              type="text"
+              id="inventorySearch"
+              oninput="renderInventoryTable()"
+              placeholder="Tìm theo Mã thiết bị (MLV-26-...), dòng máy, Serial dàn lạnh / dàn nóng..."
+              class="w-full px-3.5 py-2 rounded-xl bg-slate-50 focus:bg-white border border-slate-200 focus:border-teal-500 outline-none text-sm"
+            />
+          </div>
+          <div>
+            <select id="inventoryStatusFilter" onchange="renderInventoryTable()" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-sm cursor-pointer">
+              <option value="ALL">Tất cả trạng thái kho</option>
+              <option value="Tồn kho">Tồn kho</option>
+              <option value="Đã lắp đặt">Đã lắp đặt</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="overflow-x-auto custom-scroll">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-xs sm:text-sm">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+              <tr>
+                <th class="py-3 px-3.5 whitespace-nowrap">Mã Thiết Bị</th>
+                <th class="py-3 px-3.5 whitespace-nowrap">Ngày Nhập Kho</th>
+                <th class="py-3 px-3.5 min-w-[180px]">Hãng / Dòng Máy / Công Suất</th>
+                <th class="py-3 px-3.5 whitespace-nowrap">Serial Dàn Lạnh</th>
+                <th class="py-3 px-3.5 whitespace-nowrap">Serial Dàn Nóng</th>
+                <th class="py-3 px-3.5 text-center whitespace-nowrap">BH (Tháng)</th>
+                <th class="py-3 px-3.5 text-right whitespace-nowrap">Đơn Giá</th>
+                <th class="py-3 px-3.5 text-right whitespace-nowrap">Chi Phí Khác</th>
+                <th class="py-3 px-3.5 whitespace-nowrap">Trạng Thái Kho</th>
+                <th class="py-3 px-3.5 text-center whitespace-nowrap">Phiếu Xuất</th>
+                <th class="py-3 px-3.5 min-w-[150px]">Người sửa / Cập nhật lúc</th>
+                <th class="py-3 px-3.5 text-right whitespace-nowrap">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody" class="divide-y divide-slate-100 bg-white">
+              <!-- Render tự động -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: NHẬT KÝ LẮP ĐẶT                                                -->
+    <!-- ===================================================================== -->
+    <section id="panel-installations" class="tab-panel hidden space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-5 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Nhật Ký Lắp Đặt Máy Lạnh</h2>
+            <p class="text-xs text-slate-500">Tự động tính Tổng cộng = Đơn giá + Chi phí khác và Hạn bảo hành (+36 tháng)</p>
+          </div>
+          <button
+            type="button"
+            onclick="openInstallationModal()"
+            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-900 to-teal-600 hover:from-blue-800 hover:to-teal-500 shadow-sm transition cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Thêm phiếu lắp đặt</span>
+          </button>
+        </div>
+
+        <!-- Bộ lọc khách hàng & thống kê riêng theo khách hàng (như sheet Excel) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 pt-2 border-t border-slate-100 items-center">
+          <div class="lg:col-span-4">
+            <label for="installCustomerFilter" class="block text-xs font-medium text-slate-500 mb-1">Khách Hàng:</label>
+            <select id="installCustomerFilter" onchange="renderInstallationsTable()" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-sm font-medium cursor-pointer"></select>
+          </div>
+          <div class="lg:col-span-4">
+            <label for="installSearchInput" class="block text-xs font-medium text-slate-500 mb-1">Tìm kiếm phiếu / mã máy / địa chỉ / KTV:</label>
+            <input type="text" id="installSearchInput" oninput="renderInstallationsTable()" placeholder="Nhập từ khóa..." class="w-full px-3.5 py-2 rounded-xl bg-slate-50 focus:bg-white border border-slate-200 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div class="lg:col-span-4 grid grid-cols-2 gap-2.5 bg-blue-50/70 border border-blue-100 rounded-xl p-3">
+            <div>
+              <span class="block text-[11px] font-semibold text-blue-900/70 uppercase">Số máy đã lắp</span>
+              <span id="installFilteredCount" class="text-lg font-extrabold text-blue-950">0</span>
+            </div>
+            <div>
+              <span class="block text-[11px] font-semibold text-blue-900/70 uppercase">Tổng chi phí KH</span>
+              <span id="installFilteredCost" class="text-base sm:text-lg font-extrabold text-teal-700">0 đ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="overflow-x-auto custom-scroll">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-xs sm:text-sm">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+              <tr>
+                <th class="py-3 px-3 whitespace-nowrap">Mã Phiếu</th>
+                <th class="py-3 px-3 whitespace-nowrap">Ngày Lắp</th>
+                <th class="py-3 px-3 min-w-[155px]">Khách Hàng</th>
+                <th class="py-3 px-3 whitespace-nowrap">SĐT</th>
+                <th class="py-3 px-3 min-w-[190px]">Địa Chỉ Lắp Đặt</th>
+                <th class="py-3 px-3 whitespace-nowrap">Mã Thiết Bị</th>
+                <th class="py-3 px-3 min-w-[165px]">Dòng Máy / Công Suất</th>
+                <th class="py-3 px-3 whitespace-nowrap">Hạn Bảo Hành</th>
+                <th class="py-3 px-3 text-right whitespace-nowrap">Đơn Giá</th>
+                <th class="py-3 px-3 text-right whitespace-nowrap">Chi Phí Khác</th>
+                <th class="py-3 px-3 text-right whitespace-nowrap">Tổng Cộng</th>
+                <th class="py-3 px-3 text-right whitespace-nowrap">Còn Nợ</th>
+                <th class="py-3 px-3 whitespace-nowrap">Trạng Thái</th>
+                <th class="py-3 px-3 whitespace-nowrap">Kỹ Thuật Viên</th>
+                <th class="py-3 px-3 min-w-[120px]">Ghi Chú</th>
+                <th class="py-3 px-3 text-right whitespace-nowrap">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="installationsTableBody" class="divide-y divide-slate-100 bg-white">
+              <!-- Render tự động -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 4: NHẬT KÝ THANH TOÁN                                             -->
+    <!-- ===================================================================== -->
+    <section id="panel-payments" class="tab-panel hidden space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-5 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Quản Lý Đặt Cọc &amp; Thanh Toán Tiền Thuê Hàng Tháng</h2>
+            <p class="text-xs text-slate-500">Theo dõi tiền cọc, giá thuê tháng và lịch sử thu tiền từ Lần 1 đến Lần 36</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onclick="toggleInstallmentRange()"
+              id="toggleInstallmentRangeBtn"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-blue-950 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition cursor-pointer"
+            >
+              <span>Mở rộng Lần 13 – Lần 36</span>
+            </button>
+            <button
+              type="button"
+              onclick="openPaymentModal()"
+              class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-900 to-teal-600 hover:from-blue-800 hover:to-teal-500 shadow-sm transition cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Thêm phiếu thanh toán</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bộ lọc khách hàng & tổng hợp -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 border-t border-slate-100 items-center">
+          <div>
+            <label for="paymentCustomerFilter" class="block text-xs font-medium text-slate-500 mb-1">Khách Hàng:</label>
+            <select id="paymentCustomerFilter" onchange="renderPaymentsTable()" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-sm font-medium cursor-pointer"></select>
+          </div>
+          <div class="bg-slate-50 border border-slate-200/70 rounded-xl p-3">
+            <span class="block text-[11px] font-semibold text-slate-500 uppercase">Số Phiếu</span>
+            <span id="paymentFilteredCount" class="text-lg font-extrabold text-slate-900">0</span>
+          </div>
+          <div class="bg-emerald-50/70 border border-emerald-100 rounded-xl p-3">
+            <span class="block text-[11px] font-semibold text-emerald-800 uppercase">Tổng Tiền Cọc</span>
+            <span id="paymentFilteredDeposit" class="text-lg font-extrabold text-emerald-900">0 đ</span>
+          </div>
+          <div class="bg-teal-50/70 border border-teal-100 rounded-xl p-3">
+            <span class="block text-[11px] font-semibold text-teal-800 uppercase">Tổng Đã Thu</span>
+            <span id="paymentFilteredCollected" class="text-lg font-extrabold text-teal-900">0 đ</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="overflow-x-auto custom-scroll">
+          <table id="paymentsTable" class="min-w-full divide-y divide-slate-200 text-left text-xs sm:text-sm">
+            <thead id="paymentsTableHead" class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+              <!-- Render động theo Lần 1..12 hoặc Lần 1..36 -->
+            </thead>
+            <tbody id="paymentsTableBody" class="divide-y divide-slate-100 bg-white">
+              <!-- Render tự động -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 5: DANH MỤC (3 BẢNG CHUẨN SHEET DANH MỤC)                         -->
+    <!-- ===================================================================== -->
+    <section id="panel-categories" class="tab-panel hidden space-y-6">
+      <!-- Bảng 1: Danh sách Khách Hàng -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900">1. Danh Sách Khách Hàng</h3>
+            <p class="text-xs text-slate-500">Tên Khách Hàng, Số Điện Thoại, Ghi Chú</p>
+          </div>
+          <button type="button" onclick="openCategoryItemModal('khachHang')" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-blue-900 hover:bg-blue-800 transition cursor-pointer">
+            + Thêm khách hàng
+          </button>
+        </div>
+        <div class="overflow-x-auto custom-scroll">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-600 font-semibold">
+              <tr>
+                <th class="py-3 px-4">Tên Khách Hàng</th>
+                <th class="py-3 px-4">Số Điện Thoại</th>
+                <th class="py-3 px-4">Ghi Chú</th>
+                <th class="py-3 px-4 text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="catCustomerBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Bảng 2 & 3 xếp lưới gọn gàng -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- Bảng 2: Danh mục Dòng Máy -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 class="text-base sm:text-lg font-bold text-slate-900">2. Danh Mục Dòng Máy</h3>
+              <p class="text-xs text-slate-500">Hãng / Dòng Máy / Công Suất, BH Hãng (Tháng), Đặt Cọc Mặc Định, Ghi Chú</p>
+            </div>
+            <button type="button" onclick="openCategoryItemModal('dongMay')" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition cursor-pointer">
+              + Thêm dòng máy
+            </button>
+          </div>
+          <div class="overflow-x-auto custom-scroll">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+              <thead class="bg-slate-50 text-xs uppercase text-slate-600 font-semibold">
+                <tr>
+                  <th class="py-3 px-3.5">Hãng / Dòng Máy / Công Suất</th>
+                  <th class="py-3 px-3.5 text-center">BH (Tháng)</th>
+                  <th class="py-3 px-3.5 text-right">Đặt Cọc Mặc Định</th>
+                  <th class="py-3 px-3.5">Ghi Chú</th>
+                  <th class="py-3 px-3.5 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="catModelBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Bảng 3: Danh sách Kỹ Thuật Viên & Đối Tác -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 class="text-base sm:text-lg font-bold text-slate-900">3. Danh Sách Kỹ Thuật Viên &amp; Đối Tác</h3>
+              <p class="text-xs text-slate-500">Kỹ Thuật Viên, SĐT Liên Hệ, Đối Tác</p>
+            </div>
+            <button type="button" onclick="openCategoryItemModal('kyThuatVien')" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-blue-950 hover:bg-blue-900 transition cursor-pointer">
+              + Thêm KTV / Đối tác
+            </button>
+          </div>
+          <div class="overflow-x-auto custom-scroll">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+              <thead class="bg-slate-50 text-xs uppercase text-slate-600 font-semibold">
+                <tr>
+                  <th class="py-3 px-3.5">Kỹ Thuật Viên</th>
+                  <th class="py-3 px-3.5">SĐT Liên Hệ</th>
+                  <th class="py-3 px-3.5">Đối Tác</th>
+                  <th class="py-3 px-3.5 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="catTechBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <span><strong>MLV Quản Lý — Hệ Thống Quản Lý Máy Lạnh Việt</strong> • Hỗ trợ cộng tác nhiều người qua Firebase Firestore</span>
+      <span id="footerSyncInfo">Lưu trữ cục bộ sẵn sàng</span>
+    </div>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: CẤU HÌNH FIREBASE FIRESTORE                                  -->
+  <!-- ===================================================================== -->
+  <div id="firebaseModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden modal-anim my-auto">
+      <div class="px-6 py-4 bg-gradient-to-r from-slate-950 to-teal-900 text-white flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-bold">Kết Nối Firebase Firestore Thời Gian Thực</h3>
+          <p class="text-xs text-teal-200">Nhiều thành viên có thể cùng xem và cập nhật dữ liệu trực tiếp trên mọi thiết bị</p>
+        </div>
+        <button type="button" onclick="closeFirebaseModal()" class="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div class="rounded-xl bg-teal-50 border border-teal-200/80 p-3.5 text-xs text-teal-950 space-y-1">
+          <p class="font-bold">Hướng dẫn nhanh:</p>
+          <p>1. Tạo dự án trên Firebase Console → bật <strong>Firestore Database</strong> (chế độ Test hoặc Rule cho phép đọc/ghi).</p>
+          <p>2. Dán đối tượng <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-teal-200">firebaseConfig</code> (hoặc điền từng trường) và bấm <strong>Lưu &amp; Kết nối Real-time</strong>.</p>
+        </div>
+
+        <div>
+          <label for="firebaseConfigJsonInput" class="block text-xs font-semibold text-slate-700 mb-1">Dán nhanh đoạn <code class="font-mono">firebaseConfig</code> (JSON hoặc JS object):</label>
+          <textarea
+            id="firebaseConfigJsonInput"
+            rows="5"
+            placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "your-app.firebaseapp.com",
+  "projectId": "your-project-id",
+  "storageBucket": "your-app.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123456789:web:abcdef"
+}'
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-xs font-mono bg-slate-50 focus:bg-white"
+          ></textarea>
+          <div class="mt-2 flex justify-end">
+            <button type="button" onclick="parseFirebaseConfigTextarea()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-800 cursor-pointer">
+              Điền vào các ô bên dưới
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="fbApiKey" class="block text-xs font-semibold text-slate-700 mb-1">apiKey *</label>
+            <input type="text" id="fbApiKey" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label for="fbProjectId" class="block text-xs font-semibold text-slate-700 mb-1">projectId *</label>
+            <input type="text" id="fbProjectId" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label for="fbAuthDomain" class="block text-xs font-semibold text-slate-700 mb-1">authDomain</label>
+            <input type="text" id="fbAuthDomain" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label for="fbAppId" class="block text-xs font-semibold text-slate-700 mb-1">appId</label>
+            <input type="text" id="fbAppId" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label for="fbStorageBucket" class="block text-xs font-semibold text-slate-700 mb-1">storageBucket</label>
+            <input type="text" id="fbStorageBucket" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label for="fbWorkspaceId" class="block text-xs font-semibold text-slate-700 mb-1">Mã phòng đồng bộ (Workspace ID)</label>
+            <input type="text" id="fbWorkspaceId" value="mlv-quan-ly-2026" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono outline-none focus:border-teal-500" />
+          </div>
+        </div>
+
+        <div id="fbModalMessage" class="hidden rounded-xl px-3.5 py-2.5 text-xs font-medium"></div>
+
+        <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="button"
+            onclick="disconnectFirebase()"
+            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 cursor-pointer"
+          >
+            Ngắt kết nối (Dùng cục bộ)
+          </button>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="testFirebaseConnection()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 cursor-pointer">
+              Kiểm tra kết nối
+            </button>
+            <button type="button" onclick="saveAndConnectFirebase()" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-900 to-teal-600 hover:from-blue-800 hover:to-teal-500 cursor-pointer">
+              Lưu &amp; Kết nối Real-time
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: THÊM / SỬA THIẾT BỊ KHO                                     -->
+  <!-- ===================================================================== -->
+  <div id="deviceModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden modal-anim my-auto">
+      <div class="px-6 py-4 bg-gradient-to-r from-blue-950 to-teal-800 text-white flex items-center justify-between">
+        <h3 id="deviceModalTitle" class="text-lg font-bold">Thêm Thiết Bị Nhập Kho</h3>
+        <button type="button" onclick="closeDeviceModal()" class="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="deviceForm" onsubmit="saveDeviceForm(event)" class="p-6 space-y-4">
+        <input type="hidden" id="devOriginalCode" />
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="devCode" class="block text-xs font-semibold text-slate-700 mb-1">Mã Thiết Bị *</label>
+            <input type="text" id="devCode" required placeholder="VD: MLV-26-0027" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm font-mono" />
+          </div>
+          <div>
+            <label for="devImportDate" class="block text-xs font-semibold text-slate-700 mb-1">Ngày Nhập Kho *</label>
+            <input type="date" id="devImportDate" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div>
+          <label for="devModel" class="block text-xs font-semibold text-slate-700 mb-1">Hãng / Dòng Máy / Công Suất *</label>
+          <input type="text" id="devModel" list="modelOptionsDatalist" required placeholder="VD: Casper / JC-09IU36 / 1.0HP" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          <datalist id="modelOptionsDatalist"></datalist>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="devSerialIndoor" class="block text-xs font-semibold text-slate-700 mb-1">Serial Dàn Lạnh</label>
+            <input type="text" id="devSerialIndoor" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm font-mono" />
+          </div>
+          <div>
+            <label for="devSerialOutdoor" class="block text-xs font-semibold text-slate-700 mb-1">Serial Dàn Nóng</label>
+            <input type="text" id="devSerialOutdoor" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm font-mono" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label for="devWarranty" class="block text-xs font-semibold text-slate-700 mb-1">Thời Gian BH (Tháng)</label>
+            <input type="number" id="devWarranty" value="36" min="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="devPrice" class="block text-xs font-semibold text-slate-700 mb-1">Đơn Giá (đ)</label>
+            <input type="number" id="devPrice" value="4700000" min="0" step="1000" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="devOtherCost" class="block text-xs font-semibold text-slate-700 mb-1">Chi Phí Khác (đ)</label>
+            <input type="number" id="devOtherCost" value="0" min="0" step="1000" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="devStatus" class="block text-xs font-semibold text-slate-700 mb-1">Trạng Thái Kho</label>
+            <select id="devStatus" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm bg-white cursor-pointer">
+              <option value="Tồn kho">Tồn kho</option>
+              <option value="Đã lắp đặt">Đã lắp đặt</option>
+            </select>
+          </div>
+          <div>
+            <label for="devExportTicket" class="block text-xs font-semibold text-slate-700 mb-1">Phiếu Lắp Đã Xuất</label>
+            <input type="text" id="devExportTicket" placeholder="- hoặc mã phiếu" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex justify-end gap-2">
+          <button type="button" onclick="closeDeviceModal()" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-900 to-teal-600 hover:from-blue-800 hover:to-teal-500 cursor-pointer">Lưu thiết bị</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 3: THÊM / SỬA PHIẾU LẮP ĐẶT                                     -->
+  <!-- ===================================================================== -->
+  <div id="installModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden modal-anim my-auto">
+      <div class="px-6 py-4 bg-gradient-to-r from-blue-950 to-teal-800 text-white flex items-center justify-between">
+        <h3 id="installModalTitle" class="text-lg font-bold">Thêm Phiếu Lắp Đặt</h3>
+        <button type="button" onclick="closeInstallModal()" class="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="installForm" onsubmit="saveInstallForm(event)" class="p-6 space-y-4">
+        <input type="hidden" id="instEditingTicket" />
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label for="instTicketCode" class="block text-xs font-semibold text-slate-700 mb-1">Mã Phiếu *</label>
+            <input type="number" id="instTicketCode" required min="1" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="instDate" class="block text-xs font-semibold text-slate-700 mb-1">Ngày Lắp *</label>
+            <input type="date" id="instDate" required onchange="autoCalcWarranty()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="instWarrantyEnd" class="block text-xs font-semibold text-slate-700 mb-1">Hạn Bảo Hành</label>
+            <input type="date" id="instWarrantyEnd" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm bg-slate-50" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="instCustomer" class="block text-xs font-semibold text-slate-700 mb-1">Khách Hàng *</label>
+            <input type="text" id="instCustomer" list="customerOptionsDatalist" required onchange="onInstallCustomerChange()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+            <datalist id="customerOptionsDatalist"></datalist>
+          </div>
+          <div>
+            <label for="instPhone" class="block text-xs font-semibold text-slate-700 mb-1">SĐT</label>
+            <input type="text" id="instPhone" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div>
+          <label for="instAddress" class="block text-xs font-semibold text-slate-700 mb-1">Địa Chỉ Lắp Đặt *</label>
+          <input type="text" id="instAddress" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="instDeviceCode" class="block text-xs font-semibold text-slate-700 mb-1">Mã Thiết Bị *</label>
+            <select id="instDeviceCode" required onchange="onInstallDeviceChange()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm bg-white cursor-pointer"></select>
+          </div>
+          <div>
+            <label for="instModel" class="block text-xs font-semibold text-slate-700 mb-1">Dòng Máy / Công Suất</label>
+            <input type="text" id="instModel" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label for="instPrice" class="block text-xs font-semibold text-slate-700 mb-1">Đơn Giá (đ)</label>
+            <input type="number" id="instPrice" min="0" step="1000" oninput="recalcInstallTotal()" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="instOtherCost" class="block text-xs font-semibold text-slate-700 mb-1">Chi Phí Khác (đ)</label>
+            <input type="number" id="instOtherCost" min="0" step="1000" oninput="recalcInstallTotal()" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="instTotal" class="block text-xs font-semibold text-slate-700 mb-1">Tổng Cộng (đ)</label>
+            <input type="number" id="instTotal" readonly class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-100 font-bold text-blue-950 text-sm" />
+          </div>
+          <div>
+            <label for="instDebt" class="block text-xs font-semibold text-slate-700 mb-1">Còn Nợ (đ)</label>
+            <input type="number" id="instDebt" min="0" step="1000" value="0" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label for="instStatus" class="block text-xs font-semibold text-slate-700 mb-1">Trạng Thái</label>
+            <select id="instStatus" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm bg-white cursor-pointer">
+              <option value="Đã hoàn thành">Đã hoàn thành</option>
+              <option value="Đang xử lý">Đang xử lý</option>
+              <option value="Chờ thanh toán">Chờ thanh toán</option>
+            </select>
+          </div>
+          <div>
+            <label for="instTech" class="block text-xs font-semibold text-slate-700 mb-1">Kỹ Thuật Viên</label>
+            <input type="text" id="instTech" list="techOptionsDatalist" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+            <datalist id="techOptionsDatalist"></datalist>
+          </div>
+          <div>
+            <label for="instNote" class="block text-xs font-semibold text-slate-700 mb-1">Ghi Chú</label>
+            <input type="text" id="instNote" placeholder="VD: Phòng 103" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex justify-end gap-2">
+          <button type="button" onclick="closeInstallModal()" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-900 to-teal-600 hover:from-blue-800 hover:to-teal-500 cursor-pointer">Lưu phiếu lắp đặt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 4: THÊM / SỬA PHIẾU THANH TOÁN & KỲ THU (LẦN 1..36)            -->
+  <!-- ===================================================================== -->
+  <div id="paymentModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden modal-anim my-auto">
+      <div class="px-6 py-4 bg-gradient-to-r from-blue-950 to-teal-800 text-white flex items-center justify-between">
+        <h3 id="paymentModalTitle" class="text-lg font-bold">Cập Nhật Đặt Cọc &amp; Kỳ Thanh Toán Tiền Thuê</h3>
+        <button type="button" onclick="closePaymentModal()" class="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="paymentForm" onsubmit="savePaymentForm(event)" class="p-6 space-y-4">
+        <input type="hidden" id="payEditingTicket" />
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label for="payTicketCode" class="block text-xs font-semibold text-slate-700 mb-1">Mã Phiếu *</label>
+            <input type="number" id="payTicketCode" required min="1" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="payDate" class="block text-xs font-semibold text-slate-700 mb-1">Ngày Lắp *</label>
+            <input type="date" id="payDate" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="payCustomer" class="block text-xs font-semibold text-slate-700 mb-1">Khách Hàng *</label>
+            <input type="text" id="payCustomer" list="customerOptionsDatalist" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label for="payAddress" class="block text-xs font-semibold text-slate-700 mb-1">Địa Chỉ Lắp Đặt</label>
+            <input type="text" id="payAddress" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="payDeviceCode" class="block text-xs font-semibold text-slate-700 mb-1">Mã Thiết Bị</label>
+            <input type="text" id="payDeviceCode" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm font-mono" />
+          </div>
+          <div>
+            <label for="payModel" class="block text-xs font-semibold text-slate-700 mb-1">Dòng Máy / Công Suất</label>
+            <input type="text" id="payModel" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label for="payDeposit" class="block text-xs font-semibold text-slate-700 mb-1">Đặt Cọc (đ)</label>
+            <input type="number" id="payDeposit" min="0" step="1000" value="1000000" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="payRentPrice" class="block text-xs font-semibold text-slate-700 mb-1">Giá Thuê / Tháng (đ)</label>
+            <input type="number" id="payRentPrice" min="0" step="1000" value="216000" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-teal-500 outline-none text-sm" />
+          </div>
+          <div>
+            <label for="payTotalCollectedPreview" class="block text-xs font-semibold text-slate-700 mb-1">Tổng Đã Thu (Tự động)</label>
+            <input type="text" id="payTotalCollectedPreview" readonly class="w-full px-3.5 py-2 rounded-xl border border-teal-200 bg-teal-50 font-extrabold text-teal-900 text-sm" />
+          </div>
+        </div>
+
+        <!-- Lưới nhập 36 kỳ thanh toán -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-800 uppercase">Chi Tiết Các Kỳ Thanh Toán (Lần 1 – Lần 36)</label>
+            <button type="button" onclick="fillNextInstallmentInModal()" class="text-xs font-semibold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-3 py-1 rounded-lg cursor-pointer">
+              + Điền nhanh kỳ tiếp theo theo Giá Thuê
+            </button>
+          </div>
+          <div id="modalInstallmentsGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 max-h-60 overflow-y-auto custom-scroll p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <!-- 36 ô nhập render động -->
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex justify-end gap-2">
+          <button type="button" onclick="closePaymentModal()" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-900 to-teal-600 hover:from-blue-800 hover:to-teal-500 cursor-pointer">Lưu thanh toán</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 5: THÊM / SỬA MỤC DANH MỤC (3 BẢNG)                             -->
+  <!-- ===================================================================== -->
+  <div id="categoryModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden modal-anim">
+      <div class="px-6 py-4 bg-gradient-to-r from-blue-950 to-teal-800 text-white flex items-center justify-between">
+        <h3 id="categoryModalTitle" class="text-lg font-bold">Cập Nhật Danh Mục</h3>
+        <button type="button" onclick="closeCategoryModal()" class="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="categoryForm" onsubmit="saveCategoryForm(event)" class="p-6 space-y-4">
+        <input type="hidden" id="catType" />
+        <input type="hidden" id="catIndex" />
+        <div id="catFieldsContainer" class="space-y-3">
+          <!-- Render động theo loại danh mục -->
+        </div>
+        <div class="pt-2 border-t border-slate-100 flex justify-end gap-2">
+          <button type="button" onclick="closeCategoryModal()" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-900 to-teal-600 hover:from-blue-800 hover:to-teal-500 cursor-pointer">Lưu danh mục</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 6: HỘP THOẠI XÁC NHẬN TÙY CHỈNH (THAY CONFIRM)                 -->
+  <!-- ===================================================================== -->
+  <div id="confirmModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 modal-anim space-y-4">
+      <div class="flex items-start gap-3.5">
+        <div class="w-11 h-11 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div>
+          <h3 id="confirmTitle" class="text-base font-bold text-slate-900">Xác nhận thao tác</h3>
+          <p id="confirmMessage" class="text-sm text-slate-600 mt-1"></p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2.5 pt-2">
+        <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">Hủy bỏ</button>
+        <button type="button" id="confirmSubmitBtn" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 cursor-pointer">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- DỮ LIỆU GỐC TỪ FILE MLV QUẢN LÝ & LOGIC ỨNG DỤNG                    -->
+  <!-- ===================================================================== -->
+  <script>
+    const LOCAL_STORAGE_KEY = 'MLV_QUAN_LY_MAY_LANH_VIET_V1';
+    const FB_CONFIG_STORAGE_KEY = 'MLV_FIREBASE_CONFIG_V1';
+
+    /**
+     * Dữ liệu khởi tạo đầy đủ khớp với file MLV Quản Lý (26 máy, 26 phiếu lắp đặt, 25 phiếu thanh toán, 3 bảng danh mục)
+     */
+    const INITIAL_DATA = {
+      editorName: 'Quản trị MLV',
+      lastUpdatedAt: '2026-11-20T08:00:00.000Z',
+      lastUpdatedBy: 'Hệ thống',
+      khoThietBi: [
+        { maThietBi: 'MLV-26-0001', ngayNhapKho: '2026-09-06', dongMay: 'Casper / JC-09IU36A / 1.0HP', serialLanh: '1113257RBQNHH', serialNong: '2113257KSACXR', bhThang: 36, donGia: 4750000, chiPhiKhac: 1637000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '1', updatedBy: 'Hệ thống', updatedAt: '2026-09-06 08:00' },
+        { maThietBi: 'MLV-26-0002', ngayNhapKho: '2026-09-11', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '11082648ZYGY9', serialNong: '2108264ZNKADU', bhThang: 36, donGia: 4700000, chiPhiKhac: 1250000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '2', updatedBy: 'Hệ thống', updatedAt: '2026-09-11 08:00' },
+        { maThietBi: 'MLV-26-0003', ngayNhapKho: '2026-09-11', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264SNRPRP', serialNong: '2108264T74D5C', bhThang: 36, donGia: 4700000, chiPhiKhac: 1250000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '3', updatedBy: 'Hệ thống', updatedAt: '2026-09-11 08:00' },
+        { maThietBi: 'MLV-26-0004', ngayNhapKho: '2026-09-11', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264WTY4TR', serialNong: '2108264V2G9ZG', bhThang: 36, donGia: 4700000, chiPhiKhac: 1250000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '4', updatedBy: 'Hệ thống', updatedAt: '2026-09-11 08:00' },
+        { maThietBi: 'MLV-26-0005', ngayNhapKho: '2026-09-11', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264QFNRR5', serialNong: '2108264DUDJVC', bhThang: 36, donGia: 4700000, chiPhiKhac: 1250000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '5', updatedBy: 'Hệ thống', updatedAt: '2026-09-11 08:00' },
+        { maThietBi: 'MLV-26-0006', ngayNhapKho: '2026-09-11', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '11082646VQV92', serialNong: '21082647WDSYH', bhThang: 36, donGia: 4700000, chiPhiKhac: 1250000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '6', updatedBy: 'Hệ thống', updatedAt: '2026-09-11 08:00' },
+        { maThietBi: 'MLV-26-0007', ngayNhapKho: '2026-09-11', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264S79AQA', serialNong: '21082646DKG8A', bhThang: 36, donGia: 4700000, chiPhiKhac: 1250000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '7', updatedBy: 'Hệ thống', updatedAt: '2026-09-11 08:00' },
+        { maThietBi: 'MLV-26-0008', ngayNhapKho: '2026-09-11', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264T6F3RA', serialNong: '2108264T74D5C', bhThang: 36, donGia: 4700000, chiPhiKhac: 1250000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '8', updatedBy: 'Hệ thống', updatedAt: '2026-09-11 08:00' },
+        { maThietBi: 'MLV-26-0009', ngayNhapKho: '2026-09-17', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '11082649F4UJN', serialNong: '210826435CA7F', bhThang: 36, donGia: 4700000, chiPhiKhac: 1800000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '9', updatedBy: 'Hệ thống', updatedAt: '2026-09-17 08:00' },
+        { maThietBi: 'MLV-26-0010', ngayNhapKho: '2026-09-18', dongMay: 'Casper / 2.0HP / JC-18IU36', serialLanh: '1120253DFN52A', serialNong: '2120253SPGUX9', bhThang: 36, donGia: 9250000, chiPhiKhac: 1565000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '10', updatedBy: 'Hệ thống', updatedAt: '2026-09-18 08:00' },
+        { maThietBi: 'MLV-26-0011', ngayNhapKho: '2026-09-21', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264JPJZBX', serialNong: '21082649W8WY2', bhThang: 36, donGia: 4700000, chiPhiKhac: 1475000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '11', updatedBy: 'Hệ thống', updatedAt: '2026-09-21 08:00' },
+        { maThietBi: 'MLV-26-0012', ngayNhapKho: '2026-09-21', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264C5MVBK', serialNong: '21082649WBWY2', bhThang: 36, donGia: 4700000, chiPhiKhac: 1475000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '12', updatedBy: 'Hệ thống', updatedAt: '2026-09-21 08:00' },
+        { maThietBi: 'MLV-26-0013', ngayNhapKho: '2026-09-21', dongMay: 'Casper / 1.0HP / JC-09IU36', serialLanh: '1108264YR28A4', serialNong: '210826495WWHN', bhThang: 36, donGia: 4700000, chiPhiKhac: 1565000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '13', updatedBy: 'Hệ thống', updatedAt: '2026-09-21 08:00' },
+        { maThietBi: 'MLV-26-0014', ngayNhapKho: '2026-09-30', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264QK5Q67', serialNong: '2108264SAYXTC', bhThang: 36, donGia: 4700000, chiPhiKhac: 1550000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '14', updatedBy: 'Hệ thống', updatedAt: '2026-09-30 08:00' },
+        { maThietBi: 'MLV-26-0015', ngayNhapKho: '2026-09-30', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264TVHQHF', serialNong: '2108264MSKUMR', bhThang: 36, donGia: 4700000, chiPhiKhac: 1460000, trangThaiKho: 'Đã lắp đặt', phieuXuat: '15', updatedBy: 'Hệ thống', updatedAt: '2026-09-30 08:00' },
+        { maThietBi: 'MLV-26-0016', ngayNhapKho: '2026-10-20', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264G84UKK', serialNong: '2108264RDF4DX', bhThang: 36, donGia: 4700000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '16', updatedBy: 'Hệ thống', updatedAt: '2026-10-20 08:00' },
+        { maThietBi: 'MLV-26-0017', ngayNhapKho: '2026-10-20', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264FD3UB9', serialNong: '2108264Z67F26', bhThang: 36, donGia: 4700000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '17', updatedBy: 'Hệ thống', updatedAt: '2026-10-20 08:00' },
+        { maThietBi: 'MLV-26-0018', ngayNhapKho: '2026-10-20', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264B4KKWK', serialNong: '2108264MD8C9S', bhThang: 36, donGia: 4700000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '18', updatedBy: 'Hệ thống', updatedAt: '2026-10-20 08:00' },
+        { maThietBi: 'MLV-26-0019', ngayNhapKho: '2026-10-20', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '11082643RX47V', serialNong: '2108264MX6R7D', bhThang: 36, donGia: 4700000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '19', updatedBy: 'Hệ thống', updatedAt: '2026-10-20 08:00' },
+        { maThietBi: 'MLV-26-0020', ngayNhapKho: '2026-10-20', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '11082648HBQ45', serialNong: '2108264ZD32U6', bhThang: 36, donGia: 4700000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '20', updatedBy: 'Hệ thống', updatedAt: '2026-10-20 08:00' },
+        { maThietBi: 'MLV-26-0021', ngayNhapKho: '2026-10-20', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '11082648FRBG4', serialNong: '21082642AYCPR', bhThang: 36, donGia: 4700000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '21', updatedBy: 'Hệ thống', updatedAt: '2026-10-20 08:00' },
+        { maThietBi: 'MLV-26-0022', ngayNhapKho: '2026-10-28', dongMay: 'Casper / JC-12IU36 / 1.5HP', serialLanh: '1109256M74923', serialNong: '21092569SYKH4', bhThang: 36, donGia: 6000000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '22', updatedBy: 'Hệ thống', updatedAt: '2026-10-28 08:00' },
+        { maThietBi: 'MLV-26-0023', ngayNhapKho: '2026-10-28', dongMay: 'Casper / JC-12IU36 / 1.5HP', serialLanh: '1109255Q5RGUT', serialNong: '21092562TZHC2', bhThang: 36, donGia: 6000000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '23', updatedBy: 'Hệ thống', updatedAt: '2026-10-28 08:00' },
+        { maThietBi: 'MLV-26-0024', ngayNhapKho: '2026-10-28', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '11082644Q22NF', serialNong: '2108264XXAPUU', bhThang: 36, donGia: 4700000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '24', updatedBy: 'Hệ thống', updatedAt: '2026-10-28 08:00' },
+        { maThietBi: 'MLV-26-0025', ngayNhapKho: '2026-10-28', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '11082643FDXYH', serialNong: '2108264T8ZGAZ', bhThang: 36, donGia: 4700000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '25', updatedBy: 'Hệ thống', updatedAt: '2026-10-28 08:00' },
+        { maThietBi: 'MLV-26-0026', ngayNhapKho: '2026-10-28', dongMay: 'Casper / JC-09IU36 / 1.0HP', serialLanh: '1108264W8Z3DC', serialNong: '2108264R6JN8X', bhThang: 36, donGia: 4700000, chiPhiKhac: 0, trangThaiKho: 'Đã lắp đặt', phieuXuat: '26', updatedBy: 'Hệ thống', updatedAt: '2026-10-28 08:00' }
+      ],
+      nhatKyLapDat: [
+        { maPhieu: 1, ngayLap: '2026-09-06', khachHang: 'Vũ Thị Thu Hiền ( Lợi )', sdt: '0782347686', diaChi: '38 Đường Linh Đông, phường Hiệp Bình, TP. HCM', maThietBi: 'MLV-26-0001', dongMay: 'Casper / JC-09IU36A / 1.0HP', hanBaoHanh: '2029-09-06', donGia: 4750000, chiPhiKhac: 1637000, tongCong: 6387000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Lê Huy Châu', ghiChu: 'Phòng 103' },
+        { maPhieu: 2, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', sdt: '0901131768', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0002', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-11', donGia: 4700000, chiPhiKhac: 1250000, tongCong: 5950000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Phương', ghiChu: 'Phòng: 1, 7, 14, 18, 28, 29, 36' },
+        { maPhieu: 3, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', sdt: '0901131768', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0003', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-11', donGia: 4700000, chiPhiKhac: 1250000, tongCong: 5950000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Phương', ghiChu: '' },
+        { maPhieu: 4, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', sdt: '0901131768', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0004', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-11', donGia: 4700000, chiPhiKhac: 1250000, tongCong: 5950000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Phương', ghiChu: '' },
+        { maPhieu: 5, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', sdt: '0901131768', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0005', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-11', donGia: 4700000, chiPhiKhac: 1250000, tongCong: 5950000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Phương', ghiChu: '' },
+        { maPhieu: 6, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', sdt: '0901131768', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0006', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-11', donGia: 4700000, chiPhiKhac: 1250000, tongCong: 5950000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Phương', ghiChu: '' },
+        { maPhieu: 7, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', sdt: '0901131768', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0007', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-11', donGia: 4700000, chiPhiKhac: 1250000, tongCong: 5950000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Phương', ghiChu: '' },
+        { maPhieu: 8, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', sdt: '0901131768', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0008', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-11', donGia: 4700000, chiPhiKhac: 1250000, tongCong: 5950000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Phương', ghiChu: '' },
+        { maPhieu: 9, ngayLap: '2026-09-17', khachHang: 'Ngô Hoàng Dung', sdt: '0901131768', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0009', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-17', donGia: 4700000, chiPhiKhac: 1475000, tongCong: 6175000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: '' },
+        { maPhieu: 10, ngayLap: '2026-09-18', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '138/7 Đào Sư Tích, Đông Hoà, Tp.HCM', maThietBi: 'MLV-26-0010', dongMay: 'Casper / 2.0HP / JC-18IU36', hanBaoHanh: '2029-09-18', donGia: 9250000, chiPhiKhac: 1565000, tongCong: 10815000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.2' },
+        { maPhieu: 11, ngayLap: '2026-09-21', khachHang: 'Vũ Thị Thu Hiền ( Lợi )', sdt: '0782347686', diaChi: '53/39 Tân Chánh Hiệp 33, Trung Mỹ Tây, Tp.HCM', maThietBi: 'MLV-26-0011', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-21', donGia: 4700000, chiPhiKhac: 1475000, tongCong: 6175000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: '' },
+        { maPhieu: 12, ngayLap: '2026-09-21', khachHang: 'Vũ Thị Thu Hiền ( Lợi )', sdt: '0782347686', diaChi: '1/69 Tân Chánh Hiệp 33, Trung Mỹ Tây, Tp.HCM', maThietBi: 'MLV-26-0012', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-21', donGia: 4700000, chiPhiKhac: 1475000, tongCong: 6175000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: '' },
+        { maPhieu: 13, ngayLap: '2026-09-21', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '25/37 Tân Thới Nhất 13C, Đông Hưng Thuận, HCM', maThietBi: 'MLV-26-0013', dongMay: 'Casper / 1.0HP / JC-09IU36', hanBaoHanh: '2029-09-21', donGia: 4700000, chiPhiKhac: 1565000, tongCong: 6265000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.1' },
+        { maPhieu: 14, ngayLap: '2026-09-30', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '138/7 Đào Sư Tích, Đông Hoà, Tp.HCM', maThietBi: 'MLV-26-0014', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-30', donGia: 4700000, chiPhiKhac: 1550000, tongCong: 6250000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.18' },
+        { maPhieu: 15, ngayLap: '2026-09-30', khachHang: 'Vũ Thị Thu Hiền ( Lợi )', sdt: '0782347686', diaChi: '1/69 Tân Chánh Hiệp 33, Trung Mỹ Tây, Tp.HCM', maThietBi: 'MLV-26-0015', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-09-30', donGia: 4700000, chiPhiKhac: 1460000, tongCong: 6160000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: '' },
+        { maPhieu: 16, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0016', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-10-20', donGia: 4700000, chiPhiKhac: 0, tongCong: 4700000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.1' },
+        { maPhieu: 17, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0017', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-10-20', donGia: 4700000, chiPhiKhac: 0, tongCong: 4700000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.2' },
+        { maPhieu: 18, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0018', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-10-20', donGia: 4700000, chiPhiKhac: 0, tongCong: 4700000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.5' },
+        { maPhieu: 19, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0019', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-10-20', donGia: 4700000, chiPhiKhac: 0, tongCong: 4700000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.7' },
+        { maPhieu: 20, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0020', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-10-20', donGia: 4700000, chiPhiKhac: 0, tongCong: 4700000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.8' },
+        { maPhieu: 21, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0021', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-10-20', donGia: 4700000, chiPhiKhac: 0, tongCong: 4700000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.10' },
+        { maPhieu: 22, ngayLap: '2026-10-20', khachHang: 'Asean', sdt: '', diaChi: '279C Thống Nhất, KP. Hiệp Thắng, P. Đông Hòa, TP. Hồ Chí Minh', maThietBi: 'MLV-26-0022', dongMay: 'Casper / JC-12IU36 / 1.5HP', hanBaoHanh: '2029-10-20', donGia: 6000000, chiPhiKhac: 0, tongCong: 6000000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: '' },
+        { maPhieu: 23, ngayLap: '2026-11-08', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '1202, Quốc lộ 1K, phường Đông Hòa, Thành phố Hồ Chí', maThietBi: 'MLV-26-0023', dongMay: 'Casper / JC-12IU36 / 1.5HP', hanBaoHanh: '2029-11-08', donGia: 6000000, chiPhiKhac: 0, tongCong: 6000000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.6' },
+        { maPhieu: 24, ngayLap: '2026-11-12', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '32/3 Đường 15, Linh Xuân, Thủ Đức, Hồ Chí Minh', maThietBi: 'MLV-26-0024', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-11-12', donGia: 4700000, chiPhiKhac: 0, tongCong: 4700000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.5' },
+        { maPhieu: 25, ngayLap: '2026-11-12', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '32/3 Đường 15, Linh Xuân, Thủ Đức, Hồ Chí Minh', maThietBi: 'MLV-26-0025', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-11-12', donGia: 4700000, chiPhiKhac: 0, tongCong: 4700000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: 'P.6' },
+        { maPhieu: 26, ngayLap: '2026-11-15', khachHang: 'Võ Văn Mây', sdt: '', diaChi: '74/6 Đào Sư Tích, Đông Hoà,Tp Hồ Chí Minh', maThietBi: 'MLV-26-0026', dongMay: 'Casper / JC-09IU36 / 1.0HP', hanBaoHanh: '2029-11-15', donGia: 4700000, chiPhiKhac: 0, tongCong: 4700000, conNo: 0, trangThai: 'Đã hoàn thành', kyThuatVien: 'Nguyễn Văn Hoàng', ghiChu: '' }
+      ],
+      nhatKyThanhToan: [
+        { maPhieu: 1, ngayLap: '2026-09-06', khachHang: 'Vũ Thị Thu Hiền ( Lợi )', diaChi: '38 Đường Linh Đông, phường Hiệp Bình, TP. HCM', maThietBi: 'MLV-26-0001', dongMay: 'Casper / JC-09IU36A / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000, 216000, 216000, 216000] },
+        { maPhieu: 2, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0002', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000, 216000, 216000] },
+        { maPhieu: 3, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0003', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000, 216000, 216000] },
+        { maPhieu: 4, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0004', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000, 216000, 216000] },
+        { maPhieu: 5, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0005', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000, 0, 216000] },
+        { maPhieu: 6, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0006', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000, 216000] },
+        { maPhieu: 7, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0007', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000, 216000] },
+        { maPhieu: 8, ngayLap: '2026-09-11', khachHang: 'Ngô Hoàng Dung', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0008', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000, 216000] },
+        { maPhieu: 9, ngayLap: '2026-09-17', khachHang: 'Ngô Hoàng Dung', diaChi: '1/7 Lã Xuân Oai, Hẻm 360, KP 1, p. Long Trường, tp.HCM', maThietBi: 'MLV-26-0009', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000] },
+        { maPhieu: 10, ngayLap: '2026-09-18', khachHang: 'Võ Văn Mây', diaChi: '138/7 Đào Sư Tích, Đông Hoà, Tp.HCM', maThietBi: 'MLV-26-0010', dongMay: 'Casper / 2.0HP / JC-18IU36', datCoc: 1250000, giaThue: 216000, installments: [216000] },
+        { maPhieu: 11, ngayLap: '2026-09-21', khachHang: 'Vũ Thị Thu Hiền ( Lợi )', diaChi: '53/39 Tân Chánh Hiệp 33, Trung Mỹ Tây, Tp.HCM', maThietBi: 'MLV-26-0011', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000] },
+        { maPhieu: 12, ngayLap: '2026-09-21', khachHang: 'Vũ Thị Thu Hiền ( Lợi )', diaChi: '1/69 Tân Chánh Hiệp 33, Trung Mỹ Tây, Tp.HCM', maThietBi: 'MLV-26-0012', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000] },
+        { maPhieu: 13, ngayLap: '2026-09-21', khachHang: 'Võ Văn Mây', diaChi: '25/37 Tân Thới Nhất 13C, Đông Hưng Thuận, HCM', maThietBi: 'MLV-26-0013', dongMay: 'Casper / 1.0HP / JC-09IU36', datCoc: 1000000, giaThue: 216000, installments: [216000] },
+        { maPhieu: 14, ngayLap: '2026-09-30', khachHang: 'Võ Văn Mây', diaChi: '138/7 Đào Sư Tích, Đông Hoà, Tp.HCM', maThietBi: 'MLV-26-0014', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000] },
+        { maPhieu: 15, ngayLap: '2026-09-30', khachHang: 'Vũ Thị Thu Hiền ( Lợi )', diaChi: '1/69 Tân Chánh Hiệp 33, Trung Mỹ Tây, Tp.HCM', maThietBi: 'MLV-26-0015', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [216000] },
+        { maPhieu: 17, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0017', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [] },
+        { maPhieu: 18, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0018', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [] },
+        { maPhieu: 19, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0019', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [] },
+        { maPhieu: 20, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0020', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [] },
+        { maPhieu: 21, ngayLap: '2026-10-20', khachHang: 'Võ Văn Mây', diaChi: '517 Nguyễn Tri Phương, KP Bình Đường 4, p Dĩ An, HCM', maThietBi: 'MLV-26-0021', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [] },
+        { maPhieu: 22, ngayLap: '2026-10-20', khachHang: 'Asean', diaChi: '279C Thống Nhất, KP. Hiệp Thắng, P. Đông Hòa, TP. Hồ Chí Minh', maThietBi: 'MLV-26-0022', dongMay: 'Casper / JC-12IU36 / 1.5HP', datCoc: 1250000, giaThue: 216000, installments: [] },
+        { maPhieu: 23, ngayLap: '2026-11-08', khachHang: 'Võ Văn Mây', diaChi: '1202, Quốc lộ 1K, phường Đông Hòa, Thành phố Hồ Chí', maThietBi: 'MLV-26-0023', dongMay: 'Casper / JC-12IU36 / 1.5HP', datCoc: 1250000, giaThue: 216000, installments: [] },
+        { maPhieu: 24, ngayLap: '2026-11-12', khachHang: 'Võ Văn Mây', diaChi: '32/3 Đường 15, Linh Xuân, Thủ Đức, Hồ Chí Minh', maThietBi: 'MLV-26-0024', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [] },
+        { maPhieu: 25, ngayLap: '2026-11-12', khachHang: 'Võ Văn Mây', diaChi: '32/3 Đường 15, Linh Xuân, Thủ Đức, Hồ Chí Minh', maThietBi: 'MLV-26-0025', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [] },
+        { maPhieu: 26, ngayLap: '2026-11-15', khachHang: 'Võ Văn Mây', diaChi: '74/6 Đào Sư Tích, Đông Hoà,Tp Hồ Chí Minh', maThietBi: 'MLV-26-0026', dongMay: 'Casper / JC-09IU36 / 1.0HP', datCoc: 1000000, giaThue: 216000, installments: [] }
+      ],
+      danhMuc: {
+        khachHang: [
+          { ten: 'Vũ Thị Thu Hiền ( Lợi )', sdt: '0782347686', ghiChu: 'Đầu tiên' },
+          { ten: 'Ngô Hoàng Dung', sdt: '0901131768', ghiChu: 'Lợi giới thiệu' },
+          { ten: 'Võ Văn Mây', sdt: '', ghiChu: 'Lợi giới thiệu' },
+          { ten: 'Asean', sdt: '', ghiChu: '' }
+        ],
+        dongMay: [
+          { ten: 'Casper / 1.0HP / JC-09IU36A', bhThang: 36, datCocMacDinh: 1000000, ghiChu: '' },
+          { ten: 'Casper / 1.0HP / JC-09IU36', bhThang: 36, datCocMacDinh: 1000000, ghiChu: '' },
+          { ten: 'Casper / 2.0HP / JC-18IU36', bhThang: 36, datCocMacDinh: 1250000, ghiChu: '' },
+          { ten: 'Casper / 1.5HP / JC-12IU36', bhThang: 36, datCocMacDinh: 1250000, ghiChu: '' }
+        ],
+        kyThuatVien: [
+          { ten: 'Lê Huy Châu', sdt: '0901222333', doiTac: 'Cộng tác viên' },
+          { ten: 'Nguyễn Văn Phương', sdt: '0902333444', doiTac: 'Minh Thành' },
+          { ten: 'Nguyễn Văn Hoàng', sdt: '0903444555', doiTac: 'Minh Thành' }
+        ]
+      }
+    };
+
+    let appData = loadInitialState();
+    let activeTab = 'overview';
+    let showAll36Installments = false;
+    let pendingConfirmAction = null;
+
+    // Trạng thái Firebase động
+    let fbUnsubscribe = null;
+    let fbDbInstance = null;
+    let fbDocRef = null;
+    let fbConnected = false;
+
+    function deepClone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function loadInitialState() {
+      try {
+        const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (!raw) return deepClone(INITIAL_DATA);
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.khoThietBi)) return deepClone(INITIAL_DATA);
+        return {
+          ...deepClone(INITIAL_DATA),
+          ...parsed,
+          danhMuc: {
+            ...deepClone(INITIAL_DATA.danhMuc),
+            ...(parsed.danhMuc || {})
+          }
+        };
+      } catch (e) {
+        console.error('Lỗi đọc localStorage:', e);
+        return deepClone(INITIAL_DATA);
+      }
+    }
+
+    function saveLocalState() {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appData));
+      } catch (e) {
+        console.error('Lỗi lưu localStorage:', e);
+      }
+    }
+
+    function getCurrentEditor() {
+      const val = (document.getElementById('editorNameInput')?.value || appData.editorName || 'Quản trị MLV').trim();
+      return val || 'Quản trị MLV';
+    }
+
+    function updateEditorName(name) {
+      appData.editorName = name;
+      saveLocalState();
+    }
+
+    /**
+     * Lưu dữ liệu: luôn lưu localStorage, và nếu đã kết nối Firebase thì đẩy lên Firestore
+     */
+    async function persistData(toastMsg = 'Đã cập nhật dữ liệu thành công.') {
+      appData.lastUpdatedAt = new Date().toISOString();
+      appData.lastUpdatedBy = getCurrentEditor();
+      saveLocalState();
+      renderAll();
+
+      if (fbConnected && fbDbInstance && fbDocRef) {
+        try {
+          const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+          await setDoc(fbDocRef, {
+            payloadJson: JSON.stringify(appData),
+            updatedAt: appData.lastUpdatedAt,
+            updatedBy: appData.lastUpdatedBy
+          });
+          showToast(`${toastMsg} (Đã đồng bộ Firebase Real-time)`, 'success');
+          return;
+        } catch (err) {
+          console.error('Lỗi ghi Firestore:', err);
+          showToast(`${toastMsg} (Đã lưu cục bộ; lỗi đẩy Firebase: ${err.message})`, 'warn');
+          return;
+        }
+      }
+
+      showToast(`${toastMsg} (Đã lưu cục bộ)`, 'success');
+    }
+
+    async function resetToInitialData() {
+      const editor = getCurrentEditor();
+      appData = deepClone(INITIAL_DATA);
+      appData.editorName = editor;
+      appData.lastUpdatedBy = editor;
+      appData.lastUpdatedAt = new Date().toISOString();
+      await persistData('Đã khôi phục toàn bộ dữ liệu gốc (26 thiết bị).');
+    }
+
+    // =======================================================================
+    // FIREBASE REAL-TIME SYNC MANAGER
+    // =======================================================================
+    function loadSavedFirebaseConfig() {
+      try {
+        const raw = localStorage.getItem(FB_CONFIG_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function openFirebaseModal() {
+      const saved = loadSavedFirebaseConfig() || {};
+      document.getElementById('fbApiKey').value = saved.apiKey || '';
+      document.getElementById('fbProjectId').value = saved.projectId || '';
+      document.getElementById('fbAuthDomain').value = saved.authDomain || '';
+      document.getElementById('fbAppId').value = saved.appId || '';
+      document.getElementById('fbStorageBucket').value = saved.storageBucket || '';
+      document.getElementById('fbWorkspaceId').value = saved.workspaceId || 'mlv-quan-ly-2026';
+      document.getElementById('firebaseConfigJsonInput').value = '';
+      const msgEl = document.getElementById('fbModalMessage');
+      msgEl.classList.add('hidden');
+      document.getElementById('firebaseModal').classList.remove('hidden');
+    }
+
+    function closeFirebaseModal() {
+      document.getElementById('firebaseModal').classList.add('hidden');
+    }
+
+    function showFbModalMsg(text, isError = false) {
+      const el = document.getElementById('fbModalMessage');
+      el.textContent = text;
+      el.className = `rounded-xl px-3.5 py-2.5 text-xs font-medium ${
+        isError ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+      }`;
+      el.classList.remove('hidden');
+    }
+
+    function parseFirebaseConfigTextarea() {
+      const raw = document.getElementById('firebaseConfigJsonInput').value.trim();
+      if (!raw) {
+        showFbModalMsg('Vui lòng dán nội dung firebaseConfig trước.', true);
+        return;
+      }
+      try {
+        // Hỗ trợ cả JSON chuẩn lẫn cú pháp JS object (VD: apiKey: "...")
+        let normalized = raw;
+        if (!raw.startsWith('{')) {
+          const match = raw.match(/\{[\s\S]*\}/);
+          if (match) normalized = match[0];
+        }
+        let cfg = null;
+        try {
+          cfg = JSON.parse(normalized);
+        } catch (_) {
+          // Chuyển key không ngoặc kép thành JSON hợp lệ
+          const jsonified = normalized
+            .replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
+            .replace(/'/g, '"')
+            .replace(/,\s*([}\]])/g, '$1');
+          cfg = JSON.parse(jsonified);
+        }
+
+        document.getElementById('fbApiKey').value = cfg.apiKey || '';
+        document.getElementById('fbProjectId').value = cfg.projectId || '';
+        document.getElementById('fbAuthDomain').value = cfg.authDomain || '';
+        document.getElementById('fbAppId').value = cfg.appId || '';
+        document.getElementById('fbStorageBucket').value = cfg.storageBucket || '';
+        showFbModalMsg('Đã điền thông tin cấu hình thành công.');
+      } catch (err) {
+        showFbModalMsg('Không đọc được cấu hình. Hãy kiểm tra lại định dạng apiKey / projectId.', true);
+      }
+    }
+
+    function getFormFirebaseConfig() {
+      return {
+        apiKey: document.getElementById('fbApiKey').value.trim(),
+        projectId: document.getElementById('fbProjectId').value.trim(),
+        authDomain: document.getElementById('fbAuthDomain').value.trim(),
+        appId: document.getElementById('fbAppId').value.trim(),
+        storageBucket: document.getElementById('fbStorageBucket').value.trim(),
+        workspaceId: (document.getElementById('fbWorkspaceId').value.trim() || 'mlv-quan-ly-2026')
+          .replace(/[^a-zA-Z0-9_-]/g, '-')
+      };
+    }
+
+    async function testFirebaseConnection() {
+      const cfg = getFormFirebaseConfig();
+      if (!cfg.apiKey || !cfg.projectId) {
+        showFbModalMsg('Vui lòng nhập tối thiểu apiKey và projectId.', true);
+        return;
+      }
+      showFbModalMsg('Đang kiểm tra kết nối tới Firebase Firestore...', false);
+      try {
+        const { initializeApp, getApps, deleteApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+        const { getFirestore, doc, getDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+        const testName = 'mlv_test_' + Date.now();
+        const testApp = initializeApp({
+          apiKey: cfg.apiKey,
+          projectId: cfg.projectId,
+          authDomain: cfg.authDomain || `${cfg.projectId}.firebaseapp.com`,
+          appId: cfg.appId || undefined,
+          storageBucket: cfg.storageBucket || undefined
+        }, testName);
+        const testDb = getFirestore(testApp);
+        const testRef = doc(testDb, 'mlv_workspaces', cfg.workspaceId);
+        await getDoc(testRef);
+        await deleteApp(testApp);
+        showFbModalMsg(`Kết nối thành công tới project "${cfg.projectId}" (phòng: ${cfg.workspaceId})!`, false);
+      } catch (err) {
+        console.error('Test Firebase lỗi:', err);
+        showFbModalMsg(`Lỗi kết nối Firestore: ${err.message}`, true);
+      }
+    }
+
+    async function saveAndConnectFirebase() {
+      const cfg = getFormFirebaseConfig();
+      if (!cfg.apiKey || !cfg.projectId) {
+        showFbModalMsg('Vui lòng nhập tối thiểu apiKey và projectId.', true);
+        return;
+      }
+      localStorage.setItem(FB_CONFIG_STORAGE_KEY, JSON.stringify(cfg));
+      await connectFirebaseRealtime(cfg, true);
+    }
+
+    async function connectFirebaseRealtime(cfg, closeAfter = false) {
+      if (!cfg || !cfg.apiKey || !cfg.projectId) return;
+      try {
+        if (typeof fbUnsubscribe === 'function') {
+          fbUnsubscribe();
+          fbUnsubscribe = null;
+        }
+        const { initializeApp, getApps, getApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+        const { getFirestore, doc, getDoc, setDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+
+        const firebaseConfigObj = {
+          apiKey: cfg.apiKey,
+          projectId: cfg.projectId,
+          authDomain: cfg.authDomain || `${cfg.projectId}.firebaseapp.com`,
+          ...(cfg.appId ? { appId: cfg.appId } : {}),
+          ...(cfg.storageBucket ? { storageBucket: cfg.storageBucket } : {})
+        };
+
+        const appInstance = getApps().some(a => a.name === 'MLV_SYNC_APP')
+          ? getApp('MLV_SYNC_APP')
+          : initializeApp(firebaseConfigObj, 'MLV_SYNC_APP');
+
+        fbDbInstance = getFirestore(appInstance);
+        fbDocRef = doc(fbDbInstance, 'mlv_workspaces', cfg.workspaceId);
+
+        // Nếu document trên cloud chưa có, khởi tạo bằng dữ liệu hiện tại
+        const snap = await getDoc(fbDocRef);
+        if (!snap.exists()) {
+          await setDoc(fbDocRef, {
+            payloadJson: JSON.stringify(appData),
+            updatedAt: new Date().toISOString(),
+            updatedBy: getCurrentEditor()
+          });
+        }
+
+        fbConnected = true;
+        updateSyncIndicator(true, `${cfg.projectId} / ${cfg.workspaceId}`);
+
+        fbUnsubscribe = onSnapshot(fbDocRef, (docSnap) => {
+          if (!docSnap.exists()) return;
+          const remote = docSnap.data();
+          if (!remote || !remote.payloadJson) return;
+          try {
+            const parsedRemote = JSON.parse(remote.payloadJson);
+            if (!parsedRemote || !Array.isArray(parsedRemote.khoThietBi)) return;
+
+            const currentEditor = getCurrentEditor();
+            const isNewer = !appData.lastUpdatedAt || (remote.updatedAt && remote.updatedAt >= appData.lastUpdatedAt);
+            if (isNewer) {
+              appData = {
+                ...deepClone(INITIAL_DATA),
+                ...parsedRemote,
+                editorName: currentEditor,
+                danhMuc: {
+                  ...deepClone(INITIAL_DATA.danhMuc),
+                  ...(parsedRemote.danhMuc || {})
+                }
+              };
+              saveLocalState();
+              renderAll();
+            }
+          } catch (parseErr) {
+            console.error('Lỗi đồng bộ dữ liệu từ Firebase:', parseErr);
+          }
+        }, (err) => {
+          console.error('onSnapshot lỗi:', err);
+          fbConnected = false;
+          updateSyncIndicator(false, 'Lỗi kết nối Firebase');
+          showToast(`Mất kết nối Firebase Real-time: ${err.message}`, 'warn');
+        });
+
+        if (closeAfter) {
+          closeFirebaseModal();
+          showToast(`Đã kết nối Firebase Real-time (${cfg.projectId}) — phòng "${cfg.workspaceId}".`, 'success');
+        }
+      } catch (err) {
+        console.error('Khởi tạo Firebase thất bại:', err);
+        fbConnected = false;
+        updateSyncIndicator(false, 'Lỗi cấu hình Firebase');
+        if (closeAfter) {
+          showFbModalMsg(`Không thể kết nối: ${err.message}`, true);
+        }
+      }
+    }
+
+    function disconnectFirebase() {
+      if (typeof fbUnsubscribe === 'function') {
+        fbUnsubscribe();
+        fbUnsubscribe = null;
+      }
+      fbConnected = false;
+      fbDbInstance = null;
+      fbDocRef = null;
+      localStorage.removeItem(FB_CONFIG_STORAGE_KEY);
+      updateSyncIndicator(false, 'Chế độ cục bộ');
+      closeFirebaseModal();
+      showToast('Đã ngắt kết nối Firebase. Đang làm việc ở chế độ cục bộ.', 'info');
+    }
+
+    function updateSyncIndicator(connected, detail = '') {
+      const badge = document.getElementById('syncStatusBadge');
+      const dot = document.getElementById('syncDot');
+      const text = document.getElementById('syncStatusText');
+      const footerInfo = document.getElementById('footerSyncInfo');
+
+      if (connected) {
+        badge.className = 'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-400/20 text-emerald-200 border border-emerald-300/40';
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+        text.textContent = `Firebase Real-time${detail ? ` (${detail})` : ''}`;
+        footerInfo.textContent = `Đang đồng bộ trực tiếp qua Firebase Firestore • ${detail}`;
+      } else {
+        badge.className = 'inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-400/15 text-amber-200 border border-amber-300/30';
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+        text.textContent = detail || 'Chế độ cục bộ';
+        footerInfo.textContent = 'Lưu tự động trên trình duyệt (localStorage) • Bấm "Cấu hình Firebase" để đồng bộ nhiều người';
+      }
+    }
+
+    // =======================================================================
+    // ĐỊNH DẠNG TIỀN TỆ, NGÀY THÁNG & TIỆN ÍCH
+    // =======================================================================
+    function formatVND(num) {
+      const n = Number(num) || 0;
+      return `${n.toLocaleString('vi-VN')} đ`;
+    }
+
+    function formatDateVN(isoDate) {
+      if (!isoDate) return '—';
+      const clean = String(isoDate).slice(0, 10);
+      const parts = clean.split('-');
+      if (parts.length !== 3) return clean;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function addMonthsToDateStr(dateStr, monthsToAdd = 36) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'T00:00:00');
+      if (Number.isNaN(d.getTime())) return '';
+      const targetMonth = d.getMonth() + Number(monthsToAdd || 36);
+      const result = new Date(d.getFullYear(), targetMonth, d.getDate());
+      return result.toISOString().slice(0, 10);
+    }
+
+    function sumInstallments(rec) {
+      if (!rec || !Array.isArray(rec.installments)) return 0;
+      return rec.installments.reduce((acc, v) => acc + (Number(v) || 0), 0);
+    }
+
+    function escapeHTML(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttr(str) {
+      return String(str ?? '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // =======================================================================
+    // THÔNG BÁO (TOAST) & HỘP THOẠI XÁC NHẬN
+    // =======================================================================
+    let toastTimer = null;
+    function showToast(message, type = 'success') {
+      const bar = document.getElementById('toastBar');
+      const icon = document.getElementById('toastIcon');
+      const text = document.getElementById('toastText');
+
+      bar.className = 'rounded-2xl px-4 py-3 text-sm font-medium border shadow-sm flex items-center justify-between gap-3 modal-anim';
+      if (type === 'error') {
+        bar.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-900');
+        icon.innerHTML = `<svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+      } else if (type === 'warn') {
+        bar.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-900');
+        icon.innerHTML = `<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
+      } else {
+        bar.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-900');
+        icon.innerHTML = `<svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+      }
+      text.textContent = message;
+      bar.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(hideToast, 4200);
+    }
+
+    function hideToast() {
+      document.getElementById('toastBar')?.classList.add('hidden');
+    }
+
+    function openConfirmModal({ title, message, confirmText = 'Xác nhận', onConfirm }) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      const btn = document.getElementById('confirmSubmitBtn');
+      btn.textContent = confirmText;
+      pendingConfirmAction = onConfirm;
+      btn.onclick = () => {
+        const fn = pendingConfirmAction;
+        closeConfirmModal();
+        if (typeof fn === 'function') fn();
+      };
+      document.getElementById('confirmModal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      pendingConfirmAction = null;
+      document.getElementById('confirmModal').classList.add('hidden');
+    }
+
+    // =======================================================================
+    // ĐIỀU HƯỚNG TAB & RENDER KPI TỔNG QUAN
+    // =======================================================================
+    function switchTab(tabName) {
+      activeTab = tabName;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        const isCurrent = btn.dataset.tab === tabName;
+        btn.className = isCurrent
+          ? 'tab-btn px-4 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-900 to-teal-600 text-white shadow-sm transition cursor-pointer'
+          : 'tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer';
+      });
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('hidden', panel.id !== `panel-${tabName}`);
+      });
+    }
+
+    function renderKPICards() {
+      const totalImported = appData.khoThietBi.length;
+      const installedCount = appData.khoThietBi.filter(d => d.trangThaiKho === 'Đã lắp đặt').length;
+      const inStockCount = appData.khoThietBi.filter(d => d.trangThaiKho === 'Tồn kho').length;
+
+      const totalInstallCost = appData.nhatKyLapDat.reduce((sum, r) => {
+        const lineTotal = (Number(r.tongCong) || ((Number(r.donGia) || 0) + (Number(r.chiPhiKhac) || 0)));
+        return sum + lineTotal;
+      }, 0);
+
+      const totalDeposit = appData.nhatKyThanhToan.reduce((sum, r) => sum + (Number(r.datCoc) || 0), 0);
+      const totalRentCollected = appData.nhatKyThanhToan.reduce((sum, r) => sum + sumInstallments(r), 0);
+
+      const kpis = [
+        { label: 'Tổng máy nhập kho', value: `${totalImported} bộ`, sub: 'Mã MLV-26-...', color: 'from-blue-950 to-blue-800' },
+        { label: 'Máy đã lắp đặt', value: `${installedCount} bộ`, sub: 'Đã xuất phiếu lắp', color: 'from-teal-700 to-teal-500' },
+        { label: 'Tồn kho', value: `${inStockCount} bộ`, sub: 'Sẵn sàng xuất kho', color: inStockCount > 0 ? 'from-amber-600 to-amber-500' : 'from-slate-700 to-slate-600' },
+        { label: 'Tổng chi phí lắp đặt', value: formatVND(totalInstallCost), sub: `${appData.nhatKyLapDat.length} phiếu lắp đặt`, color: 'from-indigo-900 to-blue-700' },
+        { label: 'Tổng tiền cọc', value: formatVND(totalDeposit), sub: `${appData.nhatKyThanhToan.length} phiếu thanh toán`, color: 'from-emerald-700 to-emerald-500' },
+        { label: 'Tổng đã thu tiền thuê', value: formatVND(totalRentCollected), sub: 'Tích lũy các kỳ thu', color: 'from-cyan-800 to-teal-600' }
+      ];
+
+      document.getElementById('kpiCardsSection').innerHTML = kpis.map(k => `
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col justify-between gap-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">${escapeHTML(k.label)}</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-gradient-to-r ${k.color}"></span>
+          </div>
+          <div class="text-lg sm:text-xl font-extrabold text-slate-900 truncate" title="${escapeAttr(k.value)}">${escapeHTML(k.value)}</div>
+          <div class="text-xs text-slate-500">${escapeHTML(k.sub)}</div>
+        </div>
+      `).join('');
+    }
+
+    // =======================================================================
+    // RENDER TAB 1: TỔNG QUAN & 3 KHỐI TRA CỨU NHANH
+    // =======================================================================
+    function renderOverviewTab() {
+      const updatedTimeStr = appData.lastUpdatedAt
+        ? `${new Date(appData.lastUpdatedAt).toLocaleString('vi-VN')} bởi ${appData.lastUpdatedBy || 'Hệ thống'}`
+        : 'Chưa có cập nhật';
+      document.getElementById('overviewUpdatedMeta').textContent = `Cập nhật lần cuối: ${updatedTimeStr}`;
+
+      const statuses = ['Tồn kho', 'Đã lắp đặt'];
+      const totalAll = appData.khoThietBi.length || 1;
+      document.getElementById('warehouseSummaryBody').innerHTML = statuses.map(st => {
+        const items = appData.khoThietBi.filter(d => d.trangThaiKho === st);
+        const count = items.length;
+        const val = items.reduce((s, d) => s + (Number(d.donGia) || 0), 0);
+        const pct = Math.round((count / totalAll) * 100);
+        const badgeClass = st === 'Đã lắp đặt'
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+          : 'bg-amber-100 text-amber-800 border-amber-200';
+        return `
+          <tr class="hover:bg-slate-50/70">
+            <td class="py-3 px-4 font-semibold">
+              <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badgeClass}">${escapeHTML(st)}</span>
+            </td>
+            <td class="py-3 px-4 text-right font-bold text-slate-900">${count}</td>
+            <td class="py-3 px-4 text-right font-bold text-blue-950">${formatVND(val)}</td>
+            <td class="py-3 px-4 w-48">
+              <div class="flex items-center gap-2">
+                <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full bg-teal-600 rounded-full" style="width: ${pct}%"></div>
+                </div>
+                <span class="text-xs font-semibold text-slate-600 w-10 text-right">${pct}%</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Đồng bộ dropdown tra cứu 1: Mã phiếu lắp đặt
+      const instSelect = document.getElementById('lookupInstallTicket');
+      const prevInstVal = instSelect.value;
+      const sortedInst = [...appData.nhatKyLapDat].sort((a, b) => Number(a.maPhieu) - Number(b.maPhieu));
+      instSelect.innerHTML = sortedInst.length
+        ? sortedInst.map(r => `<option value="${r.maPhieu}">Phiếu #${r.maPhieu} — ${escapeHTML(r.khachHang)} (${escapeHTML(r.maThietBi)})</option>`).join('')
+        : `<option value="">Không có phiếu</option>`;
+      if (prevInstVal && sortedInst.some(r => String(r.maPhieu) === String(prevInstVal))) {
+        instSelect.value = prevInstVal;
+      } else if (sortedInst.some(r => Number(r.maPhieu) === 25)) {
+        instSelect.value = '25';
+      }
+      renderInstallLookup();
+
+      // Đồng bộ dropdown tra cứu 2: Mã thiết bị trong kho
+      const devSelect = document.getElementById('lookupDeviceCode');
+      const prevDevVal = devSelect.value;
+      devSelect.innerHTML = appData.khoThietBi.length
+        ? appData.khoThietBi.map(d => `<option value="${escapeAttr(d.maThietBi)}">${escapeHTML(d.maThietBi)} — ${escapeHTML(d.dongMay)}</option>`).join('')
+        : `<option value="">Không có thiết bị</option>`;
+      if (prevDevVal && appData.khoThietBi.some(d => d.maThietBi === prevDevVal)) {
+        devSelect.value = prevDevVal;
+      } else if (appData.khoThietBi.some(d => d.maThietBi === 'MLV-26-0026')) {
+        devSelect.value = 'MLV-26-0026';
+      }
+      renderDeviceLookup();
+
+      // Đồng bộ dropdown tra cứu 3: Mã phiếu thanh toán
+      const paySelect = document.getElementById('lookupPaymentTicket');
+      const prevPayVal = paySelect.value;
+      const sortedPay = [...appData.nhatKyThanhToan].sort((a, b) => Number(a.maPhieu) - Number(b.maPhieu));
+      paySelect.innerHTML = sortedPay.length
+        ? sortedPay.map(p => `<option value="${p.maPhieu}">Phiếu #${p.maPhieu} — ${escapeHTML(p.khachHang)} (${escapeHTML(p.maThietBi)})</option>`).join('')
+        : `<option value="">Không có phiếu</option>`;
+      if (prevPayVal && sortedPay.some(p => String(p.maPhieu) === String(prevPayVal))) {
+        paySelect.value = prevPayVal;
+      } else if (sortedPay.some(p => Number(p.maPhieu) === 12)) {
+        paySelect.value = '12';
+      }
+      renderPaymentLookup();
+    }
+
+    function renderInstallLookup() {
+      const code = document.getElementById('lookupInstallTicket').value;
+      const box = document.getElementById('installLookupResult');
+      const rec = appData.nhatKyLapDat.find(r => String(r.maPhieu) === String(code));
+      if (!rec) {
+        box.innerHTML = `<p class="text-slate-500 text-xs">Chưa có dữ liệu phiếu lắp đặt.</p>`;
+        return;
+      }
+      const payRec = appData.nhatKyThanhToan.find(p => String(p.maPhieu) === String(code));
+      const catCust = appData.danhMuc.khachHang.find(c => c.ten === rec.khachHang);
+      const phoneDisplay = rec.sdt || (catCust && catCust.sdt) || '0 (Chưa cập nhật)';
+      const depositDisplay = payRec ? formatVND(payRec.datCoc) : 'Chưa ghi nhận ở nhật ký TT';
+
+      box.innerHTML = `
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Ngày lắp đặt:</span><span class="font-semibold text-slate-900">${formatDateVN(rec.ngayLap)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Khách hàng:</span><span class="font-semibold text-slate-900">${escapeHTML(rec.khachHang)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Số điện thoại:</span><span class="font-medium text-slate-800">${escapeHTML(phoneDisplay)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Địa chỉ lắp đặt:</span><span class="font-medium text-slate-800 text-right">${escapeHTML(rec.diaChi)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Mã thiết bị:</span><span class="font-mono font-bold text-blue-900">${escapeHTML(rec.maThietBi)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Dòng máy / CS:</span><span class="font-medium text-slate-800 text-right">${escapeHTML(rec.dongMay)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Kỹ thuật viên:</span><span class="font-medium text-slate-800">${escapeHTML(rec.kyThuatVien)}</span></div>
+        <div class="flex justify-between gap-2 pt-1 border-t border-slate-200"><span class="text-slate-500">Tiền đặt cọc:</span><span class="font-bold text-emerald-700">${depositDisplay}</span></div>
+      `;
+    }
+
+    function renderDeviceLookup() {
+      const code = document.getElementById('lookupDeviceCode').value;
+      const box = document.getElementById('deviceLookupResult');
+      const dev = appData.khoThietBi.find(d => d.maThietBi === code);
+      if (!dev) {
+        box.innerHTML = `<p class="text-slate-500 text-xs">Chưa có dữ liệu thiết bị.</p>`;
+        return;
+      }
+      const inst = appData.nhatKyLapDat.find(r => r.maThietBi === dev.maThietBi);
+      const installDateStr = inst ? formatDateVN(inst.ngayLap) : '—';
+      const exportedTicket = inst ? inst.maPhieu : (dev.phieuXuat || '-');
+
+      box.innerHTML = `
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Hãng / Dòng máy:</span><span class="font-semibold text-slate-900 text-right">${escapeHTML(dev.dongMay)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Serial dàn lạnh:</span><span class="font-mono text-xs font-semibold text-slate-800">${escapeHTML(dev.serialLanh || '—')}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Serial dàn nóng:</span><span class="font-mono text-xs font-semibold text-slate-800">${escapeHTML(dev.serialNong || '—')}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Trạng thái kho:</span><span class="font-bold ${dev.trangThaiKho === 'Đã lắp đặt' ? 'text-emerald-700' : 'text-amber-700'}">${escapeHTML(dev.trangThaiKho)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Ngày nhập kho:</span><span class="font-medium text-slate-800">${formatDateVN(dev.ngayNhapKho)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Ngày lắp đặt:</span><span class="font-medium text-slate-800">${installDateStr}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Phiếu lắp đã xuất:</span><span class="font-bold text-blue-900">${escapeHTML(String(exportedTicket))}</span></div>
+        <div class="flex justify-between gap-2 pt-1 border-t border-slate-200"><span class="text-slate-500">Đơn giá / CP khác:</span><span class="font-bold text-slate-900">${formatVND(dev.donGia)} / ${formatVND(dev.chiPhiKhac)}</span></div>
+      `;
+    }
+
+    function renderPaymentLookup() {
+      const code = document.getElementById('lookupPaymentTicket').value;
+      const box = document.getElementById('paymentLookupResult');
+      const rec = appData.nhatKyThanhToan.find(p => String(p.maPhieu) === String(code));
+      if (!rec) {
+        box.innerHTML = `<p class="text-slate-500 text-xs">Chưa có dữ liệu thanh toán cho phiếu này.</p>`;
+        return;
+      }
+      const totalCollected = sumInstallments(rec);
+      const historyItems = (rec.installments || [])
+        .map((amt, idx) => ({ ky: `Lần ${idx + 1}`, amt: Number(amt) || 0 }))
+        .filter(item => item.amt > 0);
+
+      const historyHTML = historyItems.length
+        ? `<div class="flex flex-wrap gap-1.5 pt-1">` + historyItems.map(h =>
+            `<span class="px-2 py-0.5 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-900">${h.ky}: ${formatVND(h.amt)}</span>`
+          ).join('') + `</div>`
+        : `<p class="text-xs text-slate-400 italic">Chưa ghi nhận kỳ thu tiền thuê nào.</p>`;
+
+      box.innerHTML = `
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Khách hàng:</span><span class="font-semibold text-slate-900">${escapeHTML(rec.khachHang)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Tiền đặt cọc:</span><span class="font-bold text-emerald-700">${formatVND(rec.datCoc)}</span></div>
+        <div class="flex justify-between gap-2"><span class="text-slate-500">Giá thuê / tháng:</span><span class="font-semibold text-slate-800">${formatVND(rec.giaThue)}</span></div>
+        <div class="flex justify-between gap-2 pt-1 border-t border-slate-200"><span class="text-slate-500">Tổng tiền thuê đã thu:</span><span class="font-extrabold text-teal-800">${formatVND(totalCollected)}</span></div>
+        <div class="pt-1">
+          <span class="block text-xs font-semibold text-slate-600">Lịch sử kỳ thanh toán:</span>
+          ${historyHTML}
+        </div>
+      `;
+    }
+
+    // =======================================================================
+    // TAB 2: KHO THIẾT BỊ (CRUD + LỌC)
+    // =======================================================================
+    function renderInventoryTable() {
+      const q = (document.getElementById('inventorySearch')?.value || '').trim().toLowerCase();
+      const statusFilter = document.getElementById('inventoryStatusFilter')?.value || 'ALL';
+
+      const filtered = appData.khoThietBi.filter(d => {
+        if (statusFilter !== 'ALL' && d.trangThaiKho !== statusFilter) return false;
+        if (q) {
+          const hay = [d.maThietBi, d.dongMay, d.serialLanh, d.serialNong, d.trangThaiKho, d.phieuXuat].join(' ').toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('inventoryStatsSub').textContent =
+        `Hiển thị ${filtered.length} / ${appData.khoThietBi.length} thiết bị trong KHO THIẾT BỊ`;
+
+      const tbody = document.getElementById('inventoryTableBody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" class="py-10 text-center text-slate-500">Không tìm thấy thiết bị phù hợp.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(d => {
+        const badgeCls = d.trangThaiKho === 'Đã lắp đặt'
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+          : 'bg-amber-100 text-amber-800 border-amber-200';
+        const metaStr = `${d.updatedBy || 'Hệ thống'} • ${d.updatedAt || ''}`;
+        return `
+          <tr class="hover:bg-teal-50/30 transition">
+            <td class="py-3 px-3.5 font-mono font-bold text-blue-950 whitespace-nowrap">${escapeHTML(d.maThietBi)}</td>
+            <td class="py-3 px-3.5 whitespace-nowrap text-slate-700">${formatDateVN(d.ngayNhapKho)}</td>
+            <td class="py-3 px-3.5 font-medium text-slate-900">${escapeHTML(d.dongMay)}</td>
+            <td class="py-3 px-3.5 font-mono text-xs whitespace-nowrap">${escapeHTML(d.serialLanh || '—')}</td>
+            <td class="py-3 px-3.5 font-mono text-xs whitespace-nowrap">${escapeHTML(d.serialNong || '—')}</td>
+            <td class="py-3 px-3.5 text-center whitespace-nowrap">${escapeHTML(String(d.bhThang ?? 36))}</td>
+            <td class="py-3 px-3.5 text-right font-semibold text-slate-900 whitespace-nowrap">${formatVND(d.donGia)}</td>
+            <td class="py-3 px-3.5 text-right text-slate-700 whitespace-nowrap">${formatVND(d.chiPhiKhac)}</td>
+            <td class="py-3 px-3.5 whitespace-nowrap">
+              <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badgeCls}">${escapeHTML(d.trangThaiKho)}</span>
+            </td>
+            <td class="py-3 px-3.5 text-center font-semibold text-blue-900 whitespace-nowrap">${escapeHTML(String(d.phieuXuat || '-'))}</td>
+            <td class="py-3 px-3.5 text-xs text-slate-500">${escapeHTML(metaStr)}</td>
+            <td class="py-3 px-3.5 text-right whitespace-nowrap">
+              <div class="inline-flex items-center gap-1.5">
+                <button type="button" onclick="openDeviceModal('${escapeAttr(d.maThietBi)}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 cursor-pointer">Sửa</button>
+                <button type="button" onclick="deleteDeviceConfirm('${escapeAttr(d.maThietBi)}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer">Xóa</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openDeviceModal(existingCode = null) {
+      refreshDatalists();
+      const modal = document.getElementById('deviceModal');
+      const title = document.getElementById('deviceModalTitle');
+
+      if (existingCode) {
+        const dev = appData.khoThietBi.find(d => d.maThietBi === existingCode);
+        if (!dev) return;
+        title.textContent = `Chỉnh Sửa Thiết Bị (${dev.maThietBi})`;
+        document.getElementById('devOriginalCode').value = dev.maThietBi;
+        document.getElementById('devCode').value = dev.maThietBi;
+        document.getElementById('devImportDate').value = dev.ngayNhapKho || '2026-11-20';
+        document.getElementById('devModel').value = dev.dongMay || '';
+        document.getElementById('devSerialIndoor').value = dev.serialLanh || '';
+        document.getElementById('devSerialOutdoor').value = dev.serialNong || '';
+        document.getElementById('devWarranty').value = dev.bhThang ?? 36;
+        document.getElementById('devPrice').value = dev.donGia ?? 0;
+        document.getElementById('devOtherCost').value = dev.chiPhiKhac ?? 0;
+        document.getElementById('devStatus').value = dev.trangThaiKho || 'Tồn kho';
+        document.getElementById('devExportTicket').value = dev.phieuXuat || '-';
+      } else {
+        title.textContent = 'Thêm Thiết Bị Nhập Kho';
+        document.getElementById('devOriginalCode').value = '';
+        const nextIdx = appData.khoThietBi.length + 1;
+        document.getElementById('devCode').value = `MLV-26-${String(nextIdx).padStart(4, '0')}`;
+        document.getElementById('devImportDate').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('devModel').value = appData.danhMuc.dongMay[1]?.ten || 'Casper / 1.0HP / JC-09IU36';
+        document.getElementById('devSerialIndoor').value = '';
+        document.getElementById('devSerialOutdoor').value = '';
+        document.getElementById('devWarranty').value = 36;
+        document.getElementById('devPrice').value = 4700000;
+        document.getElementById('devOtherCost').value = 0;
+        document.getElementById('devStatus').value = 'Tồn kho';
+        document.getElementById('devExportTicket').value = '-';
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function closeDeviceModal() {
+      document.getElementById('deviceModal').classList.add('hidden');
+    }
+
+    async function saveDeviceForm(event) {
+      event.preventDefault();
+      const origCode = document.getElementById('devOriginalCode').value.trim();
+      const newCode = document.getElementById('devCode').value.trim();
+      if (!newCode) return;
+
+      const duplicate = appData.khoThietBi.find(d => d.maThietBi === newCode && d.maThietBi !== origCode);
+      if (duplicate) {
+        showToast(`Mã thiết bị "${newCode}" đã tồn tại trong kho.`, 'error');
+        return;
+      }
+
+      const nowStr = new Date().toLocaleString('vi-VN');
+      const editor = getCurrentEditor();
+      const recordObj = {
+        maThietBi: newCode,
+        ngayNhapKho: document.getElementById('devImportDate').value,
+        dongMay: document.getElementById('devModel').value.trim(),
+        serialLanh: document.getElementById('devSerialIndoor').value.trim(),
+        serialNong: document.getElementById('devSerialOutdoor').value.trim(),
+        bhThang: Number(document.getElementById('devWarranty').value) || 36,
+        donGia: Number(document.getElementById('devPrice').value) || 0,
+        chiPhiKhac: Number(document.getElementById('devOtherCost').value) || 0,
+        trangThaiKho: document.getElementById('devStatus').value,
+        phieuXuat: document.getElementById('devExportTicket').value.trim() || '-',
+        updatedBy: editor,
+        updatedAt: nowStr
+      };
+
+      if (origCode) {
+        const idx = appData.khoThietBi.findIndex(d => d.maThietBi === origCode);
+        if (idx !== -1) appData.khoThietBi[idx] = recordObj;
+      } else {
+        appData.khoThietBi.push(recordObj);
+      }
+
+      closeDeviceModal();
+      await persistData(`Đã lưu thiết bị ${newCode}`);
+    }
+
+    function deleteDeviceConfirm(code) {
+      openConfirmModal({
+        title: `Xóa thiết bị ${code}?`,
+        message: `Bạn có chắc muốn xóa thiết bị "${code}" khỏi Kho thiết bị không?`,
+        confirmText: 'Xóa thiết bị',
+        onConfirm: async () => {
+          appData.khoThietBi = appData.khoThietBi.filter(d => d.maThietBi !== code);
+          await persistData(`Đã xóa thiết bị ${code}`);
+        }
+      });
+    }
+
+    // =======================================================================
+    // TAB 3: NHẬT KÝ LẮP ĐẶT (CRUD + LỌC THEO KHÁCH HÀNG)
+    // =======================================================================
+    function syncInstallationCustomerFilter() {
+      const select = document.getElementById('installCustomerFilter');
+      const prev = select.value;
+      const names = Array.from(new Set([
+        ...appData.danhMuc.khachHang.map(c => c.ten).filter(t => t && t !== 'Tất cả'),
+        ...appData.nhatKyLapDat.map(r => r.khachHang).filter(Boolean)
+      ]));
+      select.innerHTML = `<option value="Tất cả">Tất cả</option>` + names.map(n =>
+        `<option value="${escapeAttr(n)}">${escapeHTML(n)}</option>`
+      ).join('');
+      if (prev && Array.from(select.options).some(o => o.value === prev)) {
+        select.value = prev;
+      }
+    }
+
+    function renderInstallationsTable() {
+      syncInstallationCustomerFilter();
+      const custFilter = document.getElementById('installCustomerFilter').value || 'Tất cả';
+      const searchQ = (document.getElementById('installSearchInput')?.value || '').trim().toLowerCase();
+
+      const filtered = appData.nhatKyLapDat.filter(r => {
+        if (custFilter !== 'Tất cả' && r.khachHang !== custFilter) return false;
+        if (searchQ) {
+          const hay = [r.maPhieu, r.khachHang, r.sdt, r.diaChi, r.maThietBi, r.dongMay, r.kyThuatVien, r.ghiChu]
+            .join(' ')
+            .toLowerCase();
+          if (!hay.includes(searchQ)) return false;
+        }
+        return true;
+      });
+
+      const totalCostFiltered = filtered.reduce((s, r) => {
+        const lineTotal = Number(r.tongCong) || ((Number(r.donGia) || 0) + (Number(r.chiPhiKhac) || 0));
+        return s + lineTotal;
+      }, 0);
+
+      document.getElementById('installFilteredCount').textContent = `${filtered.length}`;
+      document.getElementById('installFilteredCost').textContent = formatVND(totalCostFiltered);
+
+      const tbody = document.getElementById('installationsTableBody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="16" class="py-10 text-center text-slate-500">Không có phiếu lắp đặt nào khớp bộ lọc.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => {
+        const lineTotal = Number(r.tongCong) || ((Number(r.donGia) || 0) + (Number(r.chiPhiKhac) || 0));
+        return `
+          <tr class="hover:bg-blue-50/35 transition">
+            <td class="py-3 px-3 font-bold text-blue-950 whitespace-nowrap">${escapeHTML(String(r.maPhieu))}</td>
+            <td class="py-3 px-3 whitespace-nowrap">${formatDateVN(r.ngayLap)}</td>
+            <td class="py-3 px-3 font-semibold text-slate-900">${escapeHTML(r.khachHang)}</td>
+            <td class="py-3 px-3 whitespace-nowrap text-xs">${escapeHTML(r.sdt || '0')}</td>
+            <td class="py-3 px-3 text-xs text-slate-700">${escapeHTML(r.diaChi)}</td>
+            <td class="py-3 px-3 font-mono text-xs font-bold text-teal-800 whitespace-nowrap">${escapeHTML(r.maThietBi)}</td>
+            <td class="py-3 px-3 text-xs">${escapeHTML(r.dongMay)}</td>
+            <td class="py-3 px-3 whitespace-nowrap text-xs">${formatDateVN(r.hanBaoHanh)}</td>
+            <td class="py-3 px-3 text-right whitespace-nowrap">${formatVND(r.donGia)}</td>
+            <td class="py-3 px-3 text-right whitespace-nowrap">${formatVND(r.chiPhiKhac)}</td>
+            <td class="py-3 px-3 text-right font-bold text-blue-950 whitespace-nowrap">${formatVND(lineTotal)}</td>
+            <td class="py-3 px-3 text-right whitespace-nowrap ${(Number(r.conNo) || 0) > 0 ? 'font-bold text-rose-600' : 'text-slate-600'}">${formatVND(r.conNo)}</td>
+            <td class="py-3 px-3 whitespace-nowrap">
+              <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${escapeHTML(r.trangThai || 'Đã hoàn thành')}</span>
+            </td>
+            <td class="py-3 px-3 whitespace-nowrap text-xs font-medium">${escapeHTML(r.kyThuatVien)}</td>
+            <td class="py-3 px-3 text-xs text-slate-500">${escapeHTML(r.ghiChu || '—')}</td>
+            <td class="py-3 px-3 text-right whitespace-nowrap">
+              <div class="inline-flex items-center gap-1">
+                <button type="button" onclick="openInstallationModal(${r.maPhieu})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 cursor-pointer">Sửa</button>
+                <button type="button" onclick="deleteInstallationConfirm(${r.maPhieu})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer">Xóa</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openInstallationModal(ticketCode = null) {
+      refreshDatalists();
+      const devSelect = document.getElementById('instDeviceCode');
+      devSelect.innerHTML = appData.khoThietBi.map(d =>
+        `<option value="${escapeAttr(d.maThietBi)}">${escapeHTML(d.maThietBi)} (${escapeHTML(d.dongMay)} — ${escapeHTML(d.trangThaiKho)})</option>`
+      ).join('');
+
+      const modal = document.getElementById('installModal');
+      const title = document.getElementById('installModalTitle');
+
+      if (ticketCode !== null) {
+        const rec = appData.nhatKyLapDat.find(r => Number(r.maPhieu) === Number(ticketCode));
+        if (!rec) return;
+        title.textContent = `Chỉnh Sửa Phiếu Lắp Đặt #${rec.maPhieu}`;
+        document.getElementById('instEditingTicket').value = String(rec.maPhieu);
+        document.getElementById('instTicketCode').value = rec.maPhieu;
+        document.getElementById('instDate').value = rec.ngayLap || '';
+        document.getElementById('instWarrantyEnd').value = rec.hanBaoHanh || addMonthsToDateStr(rec.ngayLap, 36);
+        document.getElementById('instCustomer').value = rec.khachHang || '';
+        document.getElementById('instPhone').value = rec.sdt || '';
+        document.getElementById('instAddress').value = rec.diaChi || '';
+        document.getElementById('instDeviceCode').value = rec.maThietBi || '';
+        document.getElementById('instModel').value = rec.dongMay || '';
+        document.getElementById('instPrice').value = rec.donGia ?? 0;
+        document.getElementById('instOtherCost').value = rec.chiPhiKhac ?? 0;
+        document.getElementById('instTotal').value = rec.tongCong ?? ((Number(rec.donGia) || 0) + (Number(rec.chiPhiKhac) || 0));
+        document.getElementById('instDebt').value = rec.conNo ?? 0;
+        document.getElementById('instStatus').value = rec.trangThai || 'Đã hoàn thành';
+        document.getElementById('instTech').value = rec.kyThuatVien || '';
+        document.getElementById('instNote').value = rec.ghiChu || '';
+      } else {
+        title.textContent = 'Thêm Phiếu Lắp Đặt Mới';
+        document.getElementById('instEditingTicket').value = '';
+        const maxTicket = appData.nhatKyLapDat.reduce((m, r) => Math.max(m, Number(r.maPhieu) || 0), 0);
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById('instTicketCode').value = maxTicket + 1;
+        document.getElementById('instDate').value = today;
+        document.getElementById('instWarrantyEnd').value = addMonthsToDateStr(today, 36);
+        document.getElementById('instCustomer').value = '';
+        document.getElementById('instPhone').value = '';
+        document.getElementById('instAddress').value = '';
+        const inStockDev = appData.khoThietBi.find(d => d.trangThaiKho === 'Tồn kho') || appData.khoThietBi[0];
+        if (inStockDev) {
+          document.getElementById('instDeviceCode').value = inStockDev.maThietBi;
+          onInstallDeviceChange();
+        }
+        document.getElementById('instOtherCost').value = 0;
+        document.getElementById('instDebt').value = 0;
+        document.getElementById('instStatus').value = 'Đã hoàn thành';
+        document.getElementById('instTech').value = appData.danhMuc.kyThuatVien[2]?.ten || 'Nguyễn Văn Hoàng';
+        document.getElementById('instNote').value = '';
+        recalcInstallTotal();
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function closeInstallModal() {
+      document.getElementById('installModal').classList.add('hidden');
+    }
+
+    function autoCalcWarranty() {
+      const dateVal = document.getElementById('instDate').value;
+      if (dateVal) {
+        document.getElementById('instWarrantyEnd').value = addMonthsToDateStr(dateVal, 36);
+      }
+    }
+
+    function onInstallCustomerChange() {
+      const custName = document.getElementById('instCustomer').value.trim();
+      const found = appData.danhMuc.khachHang.find(c => c.ten === custName);
+      if (found && found.sdt) {
+        document.getElementById('instPhone').value = found.sdt;
+      }
+    }
+
+    function onInstallDeviceChange() {
+      const devCode = document.getElementById('instDeviceCode').value;
+      const dev = appData.khoThietBi.find(d => d.maThietBi === devCode);
+      if (dev) {
+        document.getElementById('instModel').value = dev.dongMay || '';
+        document.getElementById('instPrice').value = dev.donGia ?? 0;
+        if (!document.getElementById('instEditingTicket').value) {
+          document.getElementById('instOtherCost').value = dev.chiPhiKhac ?? 0;
+        }
+        recalcInstallTotal();
+      }
+    }
+
+    function recalcInstallTotal() {
+      const p = Number(document.getElementById('instPrice').value) || 0;
+      const o = Number(document.getElementById('instOtherCost').value) || 0;
+      document.getElementById('instTotal').value = p + o;
+    }
+
+    async function saveInstallForm(event) {
+      event.preventDefault();
+      const editingTicket = document.getElementById('instEditingTicket').value;
+      const maPhieu = Number(document.getElementById('instTicketCode').value);
+      if (!maPhieu) return;
+
+      const dup = appData.nhatKyLapDat.find(r => Number(r.maPhieu) === maPhieu && String(r.maPhieu) !== String(editingTicket));
+      if (dup) {
+        showToast(`Mã phiếu lắp đặt #${maPhieu} đã tồn tại.`, 'error');
+        return;
+      }
+
+      const ngayLap = document.getElementById('instDate').value;
+      const donGia = Number(document.getElementById('instPrice').value) || 0;
+      const chiPhiKhac = Number(document.getElementById('instOtherCost').value) || 0;
+      const tongCong = donGia + chiPhiKhac;
+      const maThietBi = document.getElementById('instDeviceCode').value;
+      const khachHang = document.getElementById('instCustomer').value.trim();
+      const diaChi = document.getElementById('instAddress').value.trim();
+      const dongMay = document.getElementById('instModel').value.trim();
+
+      const item = {
+        maPhieu,
+        ngayLap,
+        khachHang,
+        sdt: document.getElementById('instPhone').value.trim(),
+        diaChi,
+        maThietBi,
+        dongMay,
+        hanBaoHanh: document.getElementById('instWarrantyEnd').value || addMonthsToDateStr(ngayLap, 36),
+        donGia,
+        chiPhiKhac,
+        tongCong,
+        conNo: Number(document.getElementById('instDebt').value) || 0,
+        trangThai: document.getElementById('instStatus').value,
+        kyThuatVien: document.getElementById('instTech').value.trim(),
+        ghiChu: document.getElementById('instNote').value.trim()
+      };
+
+      if (editingTicket) {
+        const idx = appData.nhatKyLapDat.findIndex(r => String(r.maPhieu) === String(editingTicket));
+        if (idx !== -1) appData.nhatKyLapDat[idx] = item;
+      } else {
+        appData.nhatKyLapDat.push(item);
+        // Đồng bộ trạng thái thiết bị trong kho thành "Đã lắp đặt"
+        const dev = appData.khoThietBi.find(d => d.maThietBi === maThietBi);
+        if (dev) {
+          dev.trangThaiKho = 'Đã lắp đặt';
+          dev.phieuXuat = String(maPhieu);
+          dev.updatedBy = getCurrentEditor();
+          dev.updatedAt = new Date().toLocaleString('vi-VN');
+        }
+        // Tự tạo dòng nhật ký thanh toán nếu chưa có phiếu này
+        const existsPay = appData.nhatKyThanhToan.some(p => Number(p.maPhieu) === maPhieu);
+        if (!existsPay) {
+          const modelCfg = appData.danhMuc.dongMay.find(m => dongMay.includes(m.ten.split('/').pop().trim()) || m.ten === dongMay);
+          const defaultDeposit = modelCfg ? (Number(modelCfg.datCocMacDinh) || 1000000) : 1000000;
+          appData.nhatKyThanhToan.push({
+            maPhieu,
+            ngayLap,
+            khachHang,
+            diaChi,
+            maThietBi,
+            dongMay,
+            datCoc: defaultDeposit,
+            giaThue: 216000,
+            installments: []
+          });
+        }
+      }
+
+      closeInstallModal();
+      await persistData(`Đã lưu phiếu lắp đặt #${maPhieu}`);
+    }
+
+    function deleteInstallationConfirm(ticketCode) {
+      openConfirmModal({
+        title: `Xóa phiếu lắp đặt #${ticketCode}?`,
+        message: `Bạn có chắc chắn muốn xóa phiếu lắp đặt #${ticketCode} không?`,
+        confirmText: 'Xóa phiếu',
+        onConfirm: async () => {
+          appData.nhatKyLapDat = appData.nhatKyLapDat.filter(r => Number(r.maPhieu) !== Number(ticketCode));
+          await persistData(`Đã xóa phiếu lắp đặt #${ticketCode}`);
+        }
+      });
+    }
+
+    // =======================================================================
+    // TAB 4: NHẬT KÝ THANH TOÁN (LẦN 1..12 HOẶC MỞ RỘNG LẦN 1..36)
+    // =======================================================================
+    function toggleInstallmentRange() {
+      showAll36Installments = !showAll36Installments;
+      document.getElementById('toggleInstallmentRangeBtn').textContent = showAll36Installments
+        ? 'Thu gọn Lần 1 – Lần 12'
+        : 'Mở rộng Lần 13 – Lần 36';
+      renderPaymentsTable();
+    }
+
+    function syncPaymentCustomerFilter() {
+      const select = document.getElementById('paymentCustomerFilter');
+      const prev = select.value;
+      const names = Array.from(new Set([
+        ...appData.danhMuc.khachHang.map(c => c.ten).filter(t => t && t !== 'Tất cả'),
+        ...appData.nhatKyThanhToan.map(p => p.khachHang).filter(Boolean)
+      ]));
+      select.innerHTML = `<option value="Tất cả">Tất cả</option>` + names.map(n =>
+        `<option value="${escapeAttr(n)}">${escapeHTML(n)}</option>`
+      ).join('');
+      if (prev && Array.from(select.options).some(o => o.value === prev)) {
+        select.value = prev;
+      }
+    }
+
+    function renderPaymentsTable() {
+      syncPaymentCustomerFilter();
+      const custFilter = document.getElementById('paymentCustomerFilter').value || 'Tất cả';
+      const filtered = appData.nhatKyThanhToan.filter(p => custFilter === 'Tất cả' || p.khachHang === custFilter);
+
+      const sumDeposit = filtered.reduce((s, p) => s + (Number(p.datCoc) || 0), 0);
+      const sumCollected = filtered.reduce((s, p) => s + sumInstallments(p), 0);
+
+      document.getElementById('paymentFilteredCount').textContent = `${filtered.length}`;
+      document.getElementById('paymentFilteredDeposit').textContent = formatVND(sumDeposit);
+      document.getElementById('paymentFilteredCollected').textContent = formatVND(sumCollected);
+
+      const visibleCount = showAll36Installments ? 36 : 12;
+      const installHeaders = Array.from({ length: visibleCount }, (_, i) =>
+        `<th class="py-3 px-2.5 text-right whitespace-nowrap">Lần ${i + 1}</th>`
+      ).join('');
+
+      document.getElementById('paymentsTableHead').innerHTML = `
+        <tr>
+          <th class="py-3 px-3 whitespace-nowrap">Mã Phiếu</th>
+          <th class="py-3 px-3 whitespace-nowrap">Ngày Lắp</th>
+          <th class="py-3 px-3 min-w-[155px]">Khách Hàng</th>
+          <th class="py-3 px-3 min-w-[180px]">Địa Chỉ Lắp Đặt</th>
+          <th class="py-3 px-3 whitespace-nowrap">Mã Thiết Bị</th>
+          <th class="py-3 px-3 min-w-[160px]">Dòng Máy / Công Suất</th>
+          <th class="py-3 px-3 text-right whitespace-nowrap">Đặt Cọc</th>
+          <th class="py-3 px-3 text-right whitespace-nowrap">Giá Thuê</th>
+          <th class="py-3 px-3 text-right whitespace-nowrap bg-teal-50/60 text-teal-950">Tổng Đã Thu</th>
+          ${installHeaders}
+          <th class="py-3 px-3 text-right whitespace-nowrap">Thao tác</th>
+        </tr>
+      `;
+
+      const tbody = document.getElementById('paymentsTableBody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${10 + visibleCount}" class="py-10 text-center text-slate-500">Không có phiếu thanh toán nào.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => {
+        const totalThu = sumInstallments(p);
+        const cells = Array.from({ length: visibleCount }, (_, idx) => {
+          const val = Number((p.installments || [])[idx]) || 0;
+          return `<td class="py-2.5 px-2.5 text-right whitespace-nowrap text-xs ${val > 0 ? 'font-semibold text-emerald-800 bg-emerald-50/40' : 'text-slate-400'}">${val > 0 ? val.toLocaleString('vi-VN') : '—'}</td>`;
+        }).join('');
+
+        return `
+          <tr class="hover:bg-teal-50/30 transition">
+            <td class="py-3 px-3 font-bold text-blue-950 whitespace-nowrap">${escapeHTML(String(p.maPhieu))}</td>
+            <td class="py-3 px-3 whitespace-nowrap">${formatDateVN(p.ngayLap)}</td>
+            <td class="py-3 px-3 font-semibold text-slate-900">${escapeHTML(p.khachHang)}</td>
+            <td class="py-3 px-3 text-xs text-slate-700">${escapeHTML(p.diaChi)}</td>
+            <td class="py-3 px-3 font-mono text-xs font-bold text-teal-800 whitespace-nowrap">${escapeHTML(p.maThietBi)}</td>
+            <td class="py-3 px-3 text-xs">${escapeHTML(p.dongMay)}</td>
+            <td class="py-3 px-3 text-right font-semibold text-emerald-800 whitespace-nowrap">${formatVND(p.datCoc)}</td>
+            <td class="py-3 px-3 text-right whitespace-nowrap">${formatVND(p.giaThue)}</td>
+            <td class="py-3 px-3 text-right font-extrabold text-teal-900 bg-teal-50/40 whitespace-nowrap">${formatVND(totalThu)}</td>
+            ${cells}
+            <td class="py-3 px-3 text-right whitespace-nowrap">
+              <div class="inline-flex items-center gap-1">
+                <button type="button" onclick="quickAddInstallment(${p.maPhieu})" title="Thu thêm 1 kỳ theo Giá Thuê" class="px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 cursor-pointer">+ Thu kỳ</button>
+                <button type="button" onclick="openPaymentModal(${p.maPhieu})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 cursor-pointer">Sửa</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function quickAddInstallment(ticketCode) {
+      const rec = appData.nhatKyThanhToan.find(p => Number(p.maPhieu) === Number(ticketCode));
+      if (!rec) return;
+      if (!Array.isArray(rec.installments)) rec.installments = [];
+      if (rec.installments.length >= 36) {
+        showToast('Phiếu đã đạt tối đa 36 kỳ thanh toán.', 'warn');
+        return;
+      }
+      const rentAmt = Number(rec.giaThue) || 216000;
+      rec.installments.push(rentAmt);
+      await persistData(`Đã ghi nhận thêm kỳ Lần ${rec.installments.length} (${formatVND(rentAmt)}) cho Phiếu #${ticketCode}`);
+    }
+
+    function openPaymentModal(ticketCode = null) {
+      refreshDatalists();
+      const modal = document.getElementById('paymentModal');
+      const title = document.getElementById('paymentModalTitle');
+      let currentInst = Array(36).fill(0);
+
+      if (ticketCode !== null) {
+        const rec = appData.nhatKyThanhToan.find(p => Number(p.maPhieu) === Number(ticketCode));
+        if (!rec) return;
+        title.textContent = `Cập Nhật Thanh Toán Phiếu #${rec.maPhieu} — ${rec.khachHang}`;
+        document.getElementById('payEditingTicket').value = String(rec.maPhieu);
+        document.getElementById('payTicketCode').value = rec.maPhieu;
+        document.getElementById('payDate').value = rec.ngayLap || '';
+        document.getElementById('payCustomer').value = rec.khachHang || '';
+        document.getElementById('payAddress').value = rec.diaChi || '';
+        document.getElementById('payDeviceCode').value = rec.maThietBi || '';
+        document.getElementById('payModel').value = rec.dongMay || '';
+        document.getElementById('payDeposit').value = rec.datCoc ?? 1000000;
+        document.getElementById('payRentPrice').value = rec.giaThue ?? 216000;
+        for (let i = 0; i < 36; i++) {
+          currentInst[i] = Number((rec.installments || [])[i]) || 0;
+        }
+      } else {
+        title.textContent = 'Thêm Phiếu Thanh Toán Mới';
+        document.getElementById('payEditingTicket').value = '';
+        const maxTicket = appData.nhatKyThanhToan.reduce((m, p) => Math.max(m, Number(p.maPhieu) || 0), 0);
+        document.getElementById('payTicketCode').value = maxTicket + 1;
+        document.getElementById('payDate').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('payCustomer').value = '';
+        document.getElementById('payAddress').value = '';
+        document.getElementById('payDeviceCode').value = '';
+        document.getElementById('payModel').value = '';
+        document.getElementById('payDeposit').value = 1000000;
+        document.getElementById('payRentPrice').value = 216000;
+      }
+
+      const grid = document.getElementById('modalInstallmentsGrid');
+      grid.innerHTML = currentInst.map((amt, idx) => `
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <label for="instSlot_${idx}" class="block text-[11px] font-semibold text-slate-500 mb-0.5">Lần ${idx + 1}</label>
+          <input type="number" id="instSlot_${idx}" min="0" step="1000" value="${amt || ''}" placeholder="0" oninput="updatePaymentModalPreview()" class="w-full px-2 py-1 rounded border border-slate-200 focus:border-teal-500 outline-none text-xs font-semibold text-right" />
+        </div>
+      `).join('');
+
+      updatePaymentModalPreview();
+      modal.classList.remove('hidden');
+    }
+
+    function closePaymentModal() {
+      document.getElementById('paymentModal').classList.add('hidden');
+    }
+
+    function updatePaymentModalPreview() {
+      let total = 0;
+      for (let i = 0; i < 36; i++) {
+        total += Number(document.getElementById(`instSlot_${i}`)?.value) || 0;
+      }
+      document.getElementById('payTotalCollectedPreview').value = formatVND(total);
+    }
+
+    function fillNextInstallmentInModal() {
+      const rentVal = Number(document.getElementById('payRentPrice').value) || 216000;
+      for (let i = 0; i < 36; i++) {
+        const inp = document.getElementById(`instSlot_${i}`);
+        if (inp && (Number(inp.value) || 0) === 0) {
+          inp.value = rentVal;
+          updatePaymentModalPreview();
+          return;
+        }
+      }
+    }
+
+    async function savePaymentForm(event) {
+      event.preventDefault();
+      const editingTicket = document.getElementById('payEditingTicket').value;
+      const maPhieu = Number(document.getElementById('payTicketCode').value);
+      if (!maPhieu) return;
+
+      const dup = appData.nhatKyThanhToan.find(p => Number(p.maPhieu) === maPhieu && String(p.maPhieu) !== String(editingTicket));
+      if (dup) {
+        showToast(`Mã phiếu thanh toán #${maPhieu} đã tồn tại.`, 'error');
+        return;
+      }
+
+      const rawSlots = [];
+      for (let i = 0; i < 36; i++) {
+        rawSlots.push(Number(document.getElementById(`instSlot_${i}`)?.value) || 0);
+      }
+      // Cắt bớt các số 0 dư thừa ở cuối mảng
+      while (rawSlots.length > 0 && rawSlots[rawSlots.length - 1] === 0) {
+        rawSlots.pop();
+      }
+
+      const item = {
+        maPhieu,
+        ngayLap: document.getElementById('payDate').value,
+        khachHang: document.getElementById('payCustomer').value.trim(),
+        diaChi: document.getElementById('payAddress').value.trim(),
+        maThietBi: document.getElementById('payDeviceCode').value.trim(),
+        dongMay: document.getElementById('payModel').value.trim(),
+        datCoc: Number(document.getElementById('payDeposit').value) || 0,
+        giaThue: Number(document.getElementById('payRentPrice').value) || 216000,
+        installments: rawSlots
+      };
+
+      if (editingTicket) {
+        const idx = appData.nhatKyThanhToan.findIndex(p => String(p.maPhieu) === String(editingTicket));
+        if (idx !== -1) appData.nhatKyThanhToan[idx] = item;
+      } else {
+        appData.nhatKyThanhToan.push(item);
+      }
+
+      closePaymentModal();
+      await persistData(`Đã lưu thanh toán Phiếu #${maPhieu}`);
+    }
+
+    // =======================================================================
+    // TAB 5: DANH MỤC (3 BẢNG CHUẨN SHEET DANH MỤC)
+    // =======================================================================
+    function renderCategoriesTab() {
+      // 1. Khách hàng
+      const custBody = document.getElementById('catCustomerBody');
+      custBody.innerHTML = appData.danhMuc.khachHang.map((c, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-2.5 px-4 font-semibold text-slate-900">${escapeHTML(c.ten)}</td>
+          <td class="py-2.5 px-4 font-mono text-xs">${escapeHTML(c.sdt || '—')}</td>
+          <td class="py-2.5 px-4 text-xs text-slate-600">${escapeHTML(c.ghiChu || '—')}</td>
+          <td class="py-2.5 px-4 text-right whitespace-nowrap">
+            <button type="button" onclick="openCategoryItemModal('khachHang', ${idx})" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 cursor-pointer mr-1">Sửa</button>
+            <button type="button" onclick="deleteCategoryItemConfirm('khachHang', ${idx})" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer">Xóa</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // 2. Dòng máy
+      const modelBody = document.getElementById('catModelBody');
+      modelBody.innerHTML = appData.danhMuc.dongMay.map((m, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-2.5 px-3.5 font-semibold text-slate-900">${escapeHTML(m.ten)}</td>
+          <td class="py-2.5 px-3.5 text-center">${escapeHTML(String(m.bhThang ?? 36))}</td>
+          <td class="py-2.5 px-3.5 text-right font-semibold text-emerald-800">${formatVND(m.datCocMacDinh)}</td>
+          <td class="py-2.5 px-3.5 text-xs text-slate-600">${escapeHTML(m.ghiChu || '—')}</td>
+          <td class="py-2.5 px-3.5 text-right whitespace-nowrap">
+            <button type="button" onclick="openCategoryItemModal('dongMay', ${idx})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 cursor-pointer mr-1">Sửa</button>
+            <button type="button" onclick="deleteCategoryItemConfirm('dongMay', ${idx})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer">Xóa</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // 3. Kỹ thuật viên & Đối tác
+      const techBody = document.getElementById('catTechBody');
+      techBody.innerHTML = appData.danhMuc.kyThuatVien.map((t, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-2.5 px-3.5 font-semibold text-slate-900">${escapeHTML(t.ten)}</td>
+          <td class="py-2.5 px-3.5 font-mono text-xs">${escapeHTML(t.sdt || '—')}</td>
+          <td class="py-2.5 px-3.5">
+            <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200">${escapeHTML(t.doiTac || '—')}</span>
+          </td>
+          <td class="py-2.5 px-3.5 text-right whitespace-nowrap">
+            <button type="button" onclick="openCategoryItemModal('kyThuatVien', ${idx})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 cursor-pointer mr-1">Sửa</button>
+            <button type="button" onclick="deleteCategoryItemConfirm('kyThuatVien', ${idx})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer">Xóa</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openCategoryItemModal(type, idx = null) {
+      document.getElementById('catType').value = type;
+      document.getElementById('catIndex').value = idx !== null ? String(idx) : '';
+      const container = document.getElementById('catFieldsContainer');
+      const titleEl = document.getElementById('categoryModalTitle');
+      const list = appData.danhMuc[type] || [];
+      const item = idx !== null ? list[idx] : {};
+
+      if (type === 'khachHang') {
+        titleEl.textContent = idx !== null ? 'Sửa Khách Hàng' : 'Thêm Khách Hàng Mới';
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tên Khách Hàng *</label>
+            <input type="text" id="cf_ten" required value="${escapeAttr(item.ten || '')}" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Số Điện Thoại</label>
+            <input type="text" id="cf_sdt" value="${escapeAttr(item.sdt || '')}" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Ghi Chú</label>
+            <input type="text" id="cf_ghiChu" value="${escapeAttr(item.ghiChu || '')}" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-teal-500" />
+          </div>
+        `;
+      } else if (type === 'dongMay') {
+        titleEl.textContent = idx !== null ? 'Sửa Dòng Máy' : 'Thêm Dòng Máy Mới';
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Hãng / Dòng Máy / Công Suất *</label>
+            <input type="text" id="cf_ten" required value="${escapeAttr(item.ten || '')}" placeholder="VD: Casper / 1.0HP / JC-09IU36" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-teal-500" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">BH Hãng (Tháng)</label>
+              <input type="number" id="cf_bhThang" min="0" value="${item.bhThang ?? 36}" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-teal-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Đặt Cọc Mặc Định (đ)</label>
+              <input type="number" id="cf_datCocMacDinh" min="0" step="1000" value="${item.datCocMacDinh ?? 1000000}" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-teal-500" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Ghi Chú</label>
+            <input type="text" id="cf_ghiChu" value="${escapeAttr(item.ghiChu || '')}" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-teal-500" />
+          </div>
+        `;
+      } else {
+        titleEl.textContent = idx !== null ? 'Sửa Kỹ Thuật Viên / Đối Tác' : 'Thêm Kỹ Thuật Viên / Đối Tác';
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Kỹ Thuật Viên *</label>
+            <input type="text" id="cf_ten" required value="${escapeAttr(item.ten || '')}" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">SĐT Liên Hệ</label>
+            <input type="text" id="cf_sdt" value="${escapeAttr(item.sdt || '')}" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-teal-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Đối Tác</label>
+            <input type="text" id="cf_doiTac" value="${escapeAttr(item.doiTac || '')}" placeholder="VD: Minh Thành / Cộng tác viên" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:border-teal-500" />
+          </div>
+        `;
+      }
+
+      document.getElementById('categoryModal').classList.remove('hidden');
+    }
+
+    function closeCategoryModal() {
+      document.getElementById('categoryModal').classList.add('hidden');
+    }
+
+    async function saveCategoryForm(event) {
+      event.preventDefault();
+      const type = document.getElementById('catType').value;
+      const idxStr = document.getElementById('catIndex').value;
+      const idx = idxStr !== '' ? Number(idxStr) : null;
+      const list = appData.danhMuc[type];
+
+      let entry = null;
+      if (type === 'khachHang') {
+        entry = {
+          ten: document.getElementById('cf_ten').value.trim(),
+          sdt: document.getElementById('cf_sdt').value.trim(),
+          ghiChu: document.getElementById('cf_ghiChu').value.trim()
+        };
+      } else if (type === 'dongMay') {
+        entry = {
+          ten: document.getElementById('cf_ten').value.trim(),
+          bhThang: Number(document.getElementById('cf_bhThang').value) || 36,
+          datCocMacDinh: Number(document.getElementById('cf_datCocMacDinh').value) || 0,
+          ghiChu: document.getElementById('cf_ghiChu').value.trim()
+        };
+      } else {
+        entry = {
+          ten: document.getElementById('cf_ten').value.trim(),
+          sdt: document.getElementById('cf_sdt').value.trim(),
+          doiTac: document.getElementById('cf_doiTac').value.trim()
+        };
+      }
+
+      if (idx !== null && list[idx]) {
+        list[idx] = entry;
+      } else {
+        list.push(entry);
+      }
+
+      closeCategoryModal();
+      await persistData(`Đã cập nhật danh mục (${entry.ten})`);
+    }
+
+    function deleteCategoryItemConfirm(type, idx) {
+      const item = appData.danhMuc[type]?.[idx];
+      if (!item) return;
+      openConfirmModal({
+        title: `Xóa mục "${item.ten}"?`,
+        message: 'Mục này sẽ bị xóa khỏi bảng danh mục hệ thống.',
+        confirmText: 'Xóa mục',
+        onConfirm: async () => {
+          appData.danhMuc[type].splice(idx, 1);
+          await persistData(`Đã xóa "${item.ten}" khỏi danh mục`);
+        }
+      });
+    }
+
+    // =======================================================================
+    // DATALIST GỢI Ý & XUẤT JSON
+    // =======================================================================
+    function refreshDatalists() {
+      document.getElementById('customerOptionsDatalist').innerHTML = appData.danhMuc.khachHang
+        .filter(c => c.ten && c.ten !== 'Tất cả')
+        .map(c => `<option value="${escapeAttr(c.ten)}"></option>`).join('');
+
+      document.getElementById('modelOptionsDatalist').innerHTML = appData.danhMuc.dongMay
+        .map(m => `<option value="${escapeAttr(m.ten)}"></option>`).join('');
+
+      document.getElementById('techOptionsDatalist').innerHTML = appData.danhMuc.kyThuatVien
+        .map(t => `<option value="${escapeAttr(t.ten)}"></option>`).join('');
+    }
+
+    function exportAllJSON() {
+      try {
+        const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `MLV_Quan_Ly_May_Lanh_Viet_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Đã xuất toàn bộ dữ liệu ra file JSON thành công.');
+      } catch (err) {
+        showToast(`Lỗi xuất file JSON: ${err.message}`, 'error');
+      }
+    }
+
+    // =======================================================================
+    // RENDER TỔNG HỢP & KHỞI TẠO
+    // =======================================================================
+    function renderAll() {
+      document.getElementById('editorNameInput').value = appData.editorName || '';
+      renderKPICards();
+      renderOverviewTab();
+      renderInventoryTable();
+      renderInstallationsTable();
+      renderPaymentsTable();
+      renderCategoriesTab();
+      refreshDatalists();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeFirebaseModal();
+        closeDeviceModal();
+        closeInstallModal();
+        closePaymentModal();
+        closeCategoryModal();
+        closeConfirmModal();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      switchTab(activeTab);
+      renderAll();
+      const savedFb = loadSavedFirebaseConfig();
+      if (savedFb && savedFb.apiKey && savedFb.projectId) {
+        connectFirebaseRealtime(savedFb, false);
+      } else {
+        updateSyncIndicator(false, 'Chế độ cục bộ');
+      }
+    });
+  </script>
+</body>
+</html>
