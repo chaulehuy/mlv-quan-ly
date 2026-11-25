@@ -71,7 +71,7 @@
         </div>
         <div>
           <h1 class="text-base sm:text-xl font-extrabold tracking-tight leading-snug">
-            MLV Quản Lý — Hệ Thống Quản Lý Máy Lạnh Việt
+            Hệ Thống Quản Lý Máy Lạnh Việt
           </h1>
           <p class="text-xs text-slate-300">
             Đồng bộ kho thiết bị • Nhật ký lắp đặt • Thanh toán tiền thuê • Danh mục hệ thống
@@ -1247,7 +1247,6 @@
         return;
       }
       try {
-        // Hỗ trợ cả JSON chuẩn lẫn cú pháp JS object (VD: apiKey: "...")
         let normalized = raw;
         if (!raw.startsWith('{')) {
           const match = raw.match(/\{[\s\S]*\}/);
@@ -1257,7 +1256,6 @@
         try {
           cfg = JSON.parse(normalized);
         } catch (_) {
-          // Chuyển key không ngoặc kép thành JSON hợp lệ
           const jsonified = normalized
             .replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
             .replace(/'/g, '"')
@@ -1352,7 +1350,6 @@
         fbDbInstance = getFirestore(appInstance);
         fbDocRef = doc(fbDbInstance, 'mlv_workspaces', cfg.workspaceId);
 
-        // Nếu document trên cloud chưa có, khởi tạo bằng dữ liệu hiện tại
         const snap = await getDoc(fbDocRef);
         if (!snap.exists()) {
           await setDoc(fbDocRef, {
@@ -1625,7 +1622,6 @@
         `;
       }).join('');
 
-      // Đồng bộ dropdown tra cứu 1: Mã phiếu lắp đặt
       const instSelect = document.getElementById('lookupInstallTicket');
       const prevInstVal = instSelect.value;
       const sortedInst = [...appData.nhatKyLapDat].sort((a, b) => Number(a.maPhieu) - Number(b.maPhieu));
@@ -1639,7 +1635,6 @@
       }
       renderInstallLookup();
 
-      // Đồng bộ dropdown tra cứu 2: Mã thiết bị trong kho
       const devSelect = document.getElementById('lookupDeviceCode');
       const prevDevVal = devSelect.value;
       devSelect.innerHTML = appData.khoThietBi.length
@@ -1652,7 +1647,6 @@
       }
       renderDeviceLookup();
 
-      // Đồng bộ dropdown tra cứu 3: Mã phiếu thanh toán
       const paySelect = document.getElementById('lookupPaymentTicket');
       const prevPayVal = paySelect.value;
       const sortedPay = [...appData.nhatKyThanhToan].sort((a, b) => Number(a.maPhieu) - Number(b.maPhieu));
@@ -2115,7 +2109,6 @@
         if (idx !== -1) appData.nhatKyLapDat[idx] = item;
       } else {
         appData.nhatKyLapDat.push(item);
-        // Đồng bộ trạng thái thiết bị trong kho thành "Đã lắp đặt"
         const dev = appData.khoThietBi.find(d => d.maThietBi === maThietBi);
         if (dev) {
           dev.trangThaiKho = 'Đã lắp đặt';
@@ -2123,7 +2116,6 @@
           dev.updatedBy = getCurrentEditor();
           dev.updatedAt = new Date().toLocaleString('vi-VN');
         }
-        // Tự tạo dòng nhật ký thanh toán nếu chưa có phiếu này
         const existsPay = appData.nhatKyThanhToan.some(p => Number(p.maPhieu) === maPhieu);
         if (!existsPay) {
           const modelCfg = appData.danhMuc.dongMay.find(m => dongMay.includes(m.ten.split('/').pop().trim()) || m.ten === dongMay);
@@ -2354,7 +2346,6 @@
       for (let i = 0; i < 36; i++) {
         rawSlots.push(Number(document.getElementById(`instSlot_${i}`)?.value) || 0);
       }
-      // Cắt bớt các số 0 dư thừa ở cuối mảng
       while (rawSlots.length > 0 && rawSlots[rawSlots.length - 1] === 0) {
         rawSlots.pop();
       }
@@ -2386,7 +2377,6 @@
     // TAB 5: DANH MỤC (3 BẢNG CHUẨN SHEET DANH MỤC)
     // =======================================================================
     function renderCategoriesTab() {
-      // 1. Khách hàng
       const custBody = document.getElementById('catCustomerBody');
       custBody.innerHTML = appData.danhMuc.khachHang.map((c, idx) => `
         <tr class="hover:bg-slate-50">
@@ -2400,7 +2390,6 @@
         </tr>
       `).join('');
 
-      // 2. Dòng máy
       const modelBody = document.getElementById('catModelBody');
       modelBody.innerHTML = appData.danhMuc.dongMay.map((m, idx) => `
         <tr class="hover:bg-slate-50">
@@ -2409,13 +2398,12 @@
           <td class="py-2.5 px-3.5 text-right font-semibold text-emerald-800">${formatVND(m.datCocMacDinh)}</td>
           <td class="py-2.5 px-3.5 text-xs text-slate-600">${escapeHTML(m.ghiChu || '—')}</td>
           <td class="py-2.5 px-3.5 text-right whitespace-nowrap">
-            <button type="button" onclick="openCategoryItemModal('dongMay', ${idx})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 cursor-pointer mr-1">Sửa</button>
-            <button type="button" onclick="deleteCategoryItemConfirm('dongMay', ${idx})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer">Xóa</button>
+            <button type="button" onclick="openCategoryItemModal('dongMay', ${idx})" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 cursor-pointer mr-1">Sửa</button>
+            <button type="button" onclick="deleteCategoryItemConfirm('dongMay', ${idx})" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer">Xóa</button>
           </td>
         </tr>
       `).join('');
 
-      // 3. Kỹ thuật viên & Đối tác
       const techBody = document.getElementById('catTechBody');
       techBody.innerHTML = appData.danhMuc.kyThuatVien.map((t, idx) => `
         <tr class="hover:bg-slate-50">
@@ -2425,8 +2413,8 @@
             <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200">${escapeHTML(t.doiTac || '—')}</span>
           </td>
           <td class="py-2.5 px-3.5 text-right whitespace-nowrap">
-            <button type="button" onclick="openCategoryItemModal('kyThuatVien', ${idx})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 cursor-pointer mr-1">Sửa</button>
-            <button type="button" onclick="deleteCategoryItemConfirm('kyThuatVien', ${idx})" class="px-2 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer">Xóa</button>
+            <button type="button" onclick="openCategoryItemModal('kyThuatVien', ${idx})" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 cursor-pointer mr-1">Sửa</button>
+            <button type="button" onclick="deleteCategoryItemConfirm('kyThuatVien', ${idx})" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer">Xóa</button>
           </td>
         </tr>
       `).join('');
